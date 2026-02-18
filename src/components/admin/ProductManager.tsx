@@ -84,10 +84,13 @@ export default function ProductManager() {
     refreshCategories();
   }, []);
 
-  const saveProducts = (updated: Product[]) => {
+  const saveProducts = async (updated: Product[]) => {
     setProducts(updated);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    saveToServer(STORAGE_KEYS.PRODUCTS, updated);
+    const ok = await saveToServer(STORAGE_KEYS.PRODUCTS, updated);
+    if (!ok) {
+      showMessage("Error: no se pudo guardar en el servidor");
+    }
   };
 
   const filteredProducts = useMemo(() => {

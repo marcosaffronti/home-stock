@@ -35,11 +35,11 @@ export default function LandingEditor() {
     setConfig(getStoredValue<LandingConfig>(STORAGE_KEYS.LANDING, defaultLandingConfig));
   }, []);
 
-  const save = () => {
+  const save = async () => {
     setStoredValue(STORAGE_KEYS.LANDING, config);
-    saveToServer(STORAGE_KEYS.LANDING, config);
-    setSaveMessage("Configuración de landing guardada correctamente");
-    setTimeout(() => setSaveMessage(""), 3000);
+    const ok = await saveToServer(STORAGE_KEYS.LANDING, config);
+    setSaveMessage(ok ? "Guardado en el servidor correctamente" : "ERROR: no se pudo guardar en el servidor");
+    setTimeout(() => setSaveMessage(""), 5000);
   };
 
   const resetToDefaults = () => {
