@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { Calendar, Clock, CheckCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { sendToCrm } from "@/lib/crm";
+import { trackLead } from "@/lib/tracking";
 
 const timeSlots = [
   "10:00",
@@ -246,6 +248,17 @@ export function AppointmentBooking() {
     if (!validate()) return;
 
     setIsSubmitting(true);
+
+    sendToCrm({
+      formType: "appointment",
+      data: {
+        ...formData,
+        date: selectedDate?.toISOString(),
+        time: selectedTime,
+      },
+    });
+    trackLead("appointment");
+
     await new Promise((resolve) => setTimeout(resolve, 1000));
     setIsSubmitting(false);
     setSubmitted(true);

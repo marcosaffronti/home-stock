@@ -1,10 +1,20 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { ArrowRight, Play } from "lucide-react";
+import { getStoredValue, STORAGE_KEYS } from "@/lib/storage";
+import { LandingConfig, defaultLandingConfig } from "@/types/landing";
 
 export function Hero() {
+  const [hero, setHero] = useState(defaultLandingConfig.hero);
+
+  useEffect(() => {
+    const config = getStoredValue<LandingConfig>(STORAGE_KEYS.LANDING, defaultLandingConfig);
+    setHero(config.hero);
+  }, []);
+
   return (
     <section
       id="inicio"
@@ -14,7 +24,7 @@ export function Hero() {
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `url('/images/hero-bg.jpeg')`,
+          backgroundImage: `url('${hero.backgroundImage}')`,
         }}
       >
         <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent" />
@@ -24,23 +34,21 @@ export function Hero() {
       <Container className="relative z-10">
         <div className="max-w-2xl">
           <p className="text-[var(--accent)] text-sm font-medium tracking-[0.3em] uppercase mb-4">
-            Muebles de Diseño
+            {hero.label}
           </p>
           <h1
             className="text-4xl md:text-5xl lg:text-6xl text-white font-semibold leading-tight mb-6"
             style={{ fontFamily: "var(--font-playfair), serif" }}
           >
-            Transformamos espacios en experiencias únicas
+            {hero.title}
           </h1>
           <p className="text-white/80 text-lg md:text-xl leading-relaxed mb-8 max-w-xl">
-            Descubrí nuestra colección de muebles exclusivos, diseñados para
-            quienes buscan calidad, estilo y personalidad en cada rincón de su
-            hogar.
+            {hero.subtitle}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4">
-            <Button size="lg" href="#catalogo" className="group">
-              Ver Catálogo
+            <Button size="lg" href={hero.ctaPrimaryHref} className="group">
+              {hero.ctaPrimaryText}
               <ArrowRight
                 size={20}
                 className="group-hover:translate-x-1 transition-transform ml-2"
@@ -49,11 +57,11 @@ export function Hero() {
             <Button
               size="lg"
               variant="outline"
-              href="#galeria"
+              href={hero.ctaSecondaryHref}
               className="border-white text-white hover:bg-white hover:text-[var(--foreground)]"
             >
               <Play size={20} className="mr-2" />
-              Ver Proyectos
+              {hero.ctaSecondaryText}
             </Button>
           </div>
         </div>

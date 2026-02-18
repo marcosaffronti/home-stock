@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/Button";
 import { MapPin, Phone, Mail, Clock, Send, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WHATSAPP_NUMBER } from "@/lib/constants";
+import { sendToCrm } from "@/lib/crm";
+import { trackLead } from "@/lib/tracking";
 
 const contactInfo = [
   {
@@ -65,6 +67,10 @@ export function ContactForm() {
     if (!validate()) return;
 
     setIsSubmitting(true);
+
+    sendToCrm({ formType: "contact", data: { ...formData } });
+    trackLead("contact");
+
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     setIsSubmitting(false);

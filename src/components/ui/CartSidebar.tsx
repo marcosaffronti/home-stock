@@ -7,11 +7,16 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { WHATSAPP_NUMBER } from "@/lib/constants";
 import { formatPrice } from "@/lib/formatters";
+import { trackInitiateCheckout } from "@/lib/tracking";
 
 export function CartSidebar() {
   const { items, isOpen, closeCart, total, itemCount, updateQuantity, removeItem, getItemKey } = useCart();
 
   const handleCheckout = () => {
+    trackInitiateCheckout(
+      total,
+      items.map((i) => ({ name: i.product.name, price: i.product.price, quantity: i.quantity }))
+    );
     const itemsList = items
       .map((item) => {
         const fabricInfo = item.fabric

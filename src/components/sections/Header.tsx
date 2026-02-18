@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
 import { WHATSAPP_NUMBER } from "@/lib/constants";
 import { usePathname } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 
 export function Header() {
@@ -58,17 +57,15 @@ export function Header() {
         <nav className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <Image
-              src="/images/logo-hs.jpeg"
-              alt="Home Stock"
-              width={120}
-              height={120}
+            <span
               className={cn(
-                "h-10 w-auto transition-all duration-300",
-                showScrolledStyle ? "" : "brightness-0 invert"
+                "text-2xl font-semibold tracking-tight transition-colors duration-300",
+                showScrolledStyle ? "text-[var(--foreground)]" : "text-white"
               )}
-              priority
-            />
+              style={{ fontFamily: "var(--font-playfair), serif" }}
+            >
+              Home Stock
+            </span>
           </Link>
 
           {/* Desktop Navigation */}

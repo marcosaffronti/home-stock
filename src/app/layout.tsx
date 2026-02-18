@@ -3,6 +3,8 @@ import { Playfair_Display, Inter } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
 import { CartSidebar } from "@/components/ui/CartSidebar";
+import { MetaPixel } from "@/components/tracking/MetaPixel";
+import { GoogleAnalytics } from "@/components/tracking/GoogleAnalytics";
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
@@ -63,6 +65,8 @@ export default function RootLayout({
           {children}
           <CartSidebar />
         </CartProvider>
+        <MetaPixel />
+        <GoogleAnalytics />
       </body>
     </html>
   );

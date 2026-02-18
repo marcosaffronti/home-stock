@@ -1,16 +1,46 @@
 "use client";
 
+import { useState, useEffect, useMemo } from "react";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
-import { Heart, Eye, ArrowRight, ShoppingCart } from "lucide-react";
+import { ArrowRight, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import { useCart } from "@/context/CartContext";
 import { Product } from "@/types/product";
-import { featuredProducts } from "@/data/products";
+import { featuredProducts, allProducts } from "@/data/products";
 import { formatPrice } from "@/lib/formatters";
+import { getStoredValue, STORAGE_KEYS } from "@/lib/storage";
+import { LandingConfig, defaultLandingConfig } from "@/types/landing";
 
 export function Catalog() {
   const { addItem } = useCart();
+  const [catalogConfig, setCatalogConfig] = useState(defaultLandingConfig.catalog);
+  const [featuredIds, setFeaturedIds] = useState<number[]>([]);
+  const [storedProducts, setStoredProducts] = useState<Product[] | null>(null);
+
+  useEffect(() => {
+    const config = getStoredValue<LandingConfig>(STORAGE_KEYS.LANDING, defaultLandingConfig);
+    setCatalogConfig(config.catalog);
+    setFeaturedIds(config.featuredProductIds);
+    const stored = getStoredValue<Product[] | null>(STORAGE_KEYS.PRODUCTS, null);
+    setStoredProducts(stored);
+  }, []);
+
+  const displayProducts = useMemo(() => {
+    const productList = storedProducts || allProducts;
+    if (featuredIds.length > 0) {
+      // Return products in the order defined by featuredIds
+      const ordered = featuredIds
+        .map((id) => productList.find((p) => p.id === id))
+        .filter((p): p is Product => !!p);
+      return ordered.slice(0, 8);
+    }
+    // Fallback: use featured products from data
+    if (storedProducts) {
+      return storedProducts.filter((p) => p.featured).slice(0, 8);
+    }
+    return featuredProducts.slice(0, 8);
+  }, [featuredIds, storedProducts]);
 
   const handleAddToCart = (product: Product) => {
     addItem(product);
@@ -22,23 +52,22 @@ export function Catalog() {
         {/* Header */}
         <div className="text-center mb-12">
           <p className="text-[var(--accent)] text-sm font-medium tracking-[0.3em] uppercase mb-4">
-            Nuestros Productos
+            {catalogConfig.sectionLabel}
           </p>
           <h2
             className="text-3xl md:text-4xl lg:text-5xl font-semibold text-[var(--foreground)] mb-4"
             style={{ fontFamily: "var(--font-playfair), serif" }}
           >
-            Catálogo de Muebles
+            {catalogConfig.title}
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Explorá nuestra selección de muebles de diseño, creados con los
-            mejores materiales y pensados para transformar tu hogar.
+            {catalogConfig.description}
           </p>
         </div>
 
         {/* Products Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {featuredProducts.slice(0, 8).map((product) => (
+          {displayProducts.map((product) => (
             <div
               key={product.id}
               className="group relative bg-white border border-[var(--border)] overflow-hidden"
@@ -57,20 +86,14 @@ export function Catalog() {
                     {product.tag}
                   </span>
                 )}
-                {/* Overlay Actions */}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3 z-10">
-                  <button aria-label="Agregar a favoritos" className="w-10 h-10 bg-white rounded-full flex items-center justify-center hover:bg-[var(--accent)] hover:text-white transition-colors">
-                    <Heart size={18} />
-                  </button>
+                {/* Overlay - Add to Cart */}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center z-10">
                   <button
                     onClick={() => handleAddToCart(product)}
                     aria-label="Agregar al carrito"
-                    className="w-10 h-10 bg-white rounded-full flex items-center justify-center hover:bg-[var(--accent)] hover:text-white transition-colors"
+                    className="w-12 h-12 bg-white rounded-full flex items-center justify-center hover:bg-[var(--accent)] hover:text-white transition-colors"
                   >
-                    <ShoppingCart size={18} />
-                  </button>
-                  <button aria-label="Ver detalle" className="w-10 h-10 bg-white rounded-full flex items-center justify-center hover:bg-[var(--accent)] hover:text-white transition-colors">
-                    <Eye size={18} />
+                    <ShoppingCart size={20} />
                   </button>
                 </div>
               </div>

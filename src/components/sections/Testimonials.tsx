@@ -1,55 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Container } from "@/components/ui/Container";
 import { ChevronLeft, ChevronRight, Star, Quote } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const testimonials = [
-  {
-    id: 1,
-    name: "María García",
-    initials: "MG",
-    role: "Arquitecta de Interiores",
-    content: "Trabajar con Home Stock fue una experiencia excepcional. La calidad de sus muebles y el asesoramiento personalizado superaron todas mis expectativas. Mis clientes quedaron encantados.",
-    rating: 5,
-  },
-  {
-    id: 2,
-    name: "Roberto Fernández",
-    initials: "RF",
-    role: "Empresario",
-    content: "Amoblamos toda nuestra casa de fin de semana con Home Stock. El proceso fue simple, la entrega puntual y los muebles son exactamente lo que buscábamos. Calidad premium.",
-    rating: 5,
-  },
-  {
-    id: 3,
-    name: "Carolina López",
-    initials: "CL",
-    role: "Diseñadora",
-    content: "La atención al detalle de Home Stock es impresionante. Cada pieza que compramos es una obra de arte funcional. Definitivamente seguiremos siendo clientes.",
-    rating: 5,
-  },
-  {
-    id: 4,
-    name: "Martín Ruiz",
-    initials: "MR",
-    role: "Hotelero",
-    content: "Equipamos nuestro hotel boutique con muebles de Home Stock. El resultado fue espectacular y nuestros huéspedes no dejan de elogiar la decoración.",
-    rating: 5,
-  },
-];
+import { getStoredValue, STORAGE_KEYS } from "@/lib/storage";
+import { LandingConfig, defaultLandingConfig, TestimonialItem } from "@/types/landing";
 
 export function Testimonials() {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [config, setConfig] = useState(defaultLandingConfig.testimonials);
+
+  useEffect(() => {
+    const landing = getStoredValue<LandingConfig>(STORAGE_KEYS.LANDING, defaultLandingConfig);
+    setConfig(landing.testimonials);
+  }, []);
+
+  const items = config.items;
 
   const handlePrev = () => {
-    setCurrentIndex(currentIndex === 0 ? testimonials.length - 1 : currentIndex - 1);
+    setCurrentIndex(currentIndex === 0 ? items.length - 1 : currentIndex - 1);
   };
 
   const handleNext = () => {
-    setCurrentIndex(currentIndex === testimonials.length - 1 ? 0 : currentIndex + 1);
+    setCurrentIndex(currentIndex === items.length - 1 ? 0 : currentIndex + 1);
   };
+
+  if (items.length === 0) return null;
+
+  const current: TestimonialItem = items[currentIndex] || items[0];
 
   return (
     <section className="py-20 md:py-32 bg-[var(--foreground)]">
@@ -58,17 +37,16 @@ export function Testimonials() {
           {/* Left */}
           <div>
             <p className="text-[var(--accent)] text-sm font-medium tracking-[0.3em] uppercase mb-4">
-              Testimonios
+              {config.sectionLabel}
             </p>
             <h2
               className="text-3xl md:text-4xl lg:text-5xl font-semibold text-white mb-6"
               style={{ fontFamily: "var(--font-playfair), serif" }}
             >
-              Lo que dicen nuestros clientes
+              {config.title}
             </h2>
             <p className="text-white/70 text-lg leading-relaxed mb-8">
-              La satisfacción de nuestros clientes es nuestra mayor recompensa.
-              Conocé las experiencias de quienes ya confiaron en nosotros.
+              {config.description}
             </p>
 
             {/* Navigation */}
@@ -88,7 +66,7 @@ export function Testimonials() {
                 <ChevronRight size={24} />
               </button>
               <span className="text-white/50 ml-4">
-                {currentIndex + 1} / {testimonials.length}
+                {currentIndex + 1} / {items.length}
               </span>
             </div>
           </div>
@@ -102,7 +80,7 @@ export function Testimonials() {
             <div className="bg-white p-8 md:p-12 relative">
               {/* Stars */}
               <div className="flex gap-1 mb-6">
-                {[...Array(testimonials[currentIndex].rating)].map((_, i) => (
+                {[...Array(current.rating)].map((_, i) => (
                   <Star
                     key={i}
                     size={20}
@@ -113,22 +91,22 @@ export function Testimonials() {
 
               {/* Content */}
               <p className="text-[var(--foreground)] text-lg md:text-xl leading-relaxed mb-8">
-                &quot;{testimonials[currentIndex].content}&quot;
+                &quot;{current.content}&quot;
               </p>
 
               {/* Author */}
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-full bg-[var(--primary)] flex items-center justify-center flex-shrink-0">
                   <span className="text-white font-semibold text-lg">
-                    {testimonials[currentIndex].initials}
+                    {current.initials}
                   </span>
                 </div>
                 <div>
                   <p className="font-semibold text-[var(--foreground)]">
-                    {testimonials[currentIndex].name}
+                    {current.name}
                   </p>
                   <p className="text-gray-500 text-sm">
-                    {testimonials[currentIndex].role}
+                    {current.role}
                   </p>
                 </div>
               </div>
@@ -136,7 +114,7 @@ export function Testimonials() {
 
             {/* Dots */}
             <div className="flex justify-center gap-2 mt-6">
-              {testimonials.map((_, index) => (
+              {items.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => setCurrentIndex(index)}

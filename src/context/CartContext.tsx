@@ -3,6 +3,7 @@
 import { createContext, useContext, useReducer, ReactNode, useEffect } from "react";
 import { Product, CartItem } from "@/types/product";
 import { FabricSelection } from "@/types/fabric";
+import { trackAddToCart } from "@/lib/tracking";
 
 function getCartItemKey(productId: number, fabric?: FabricSelection): string {
   if (!fabric) return String(productId);
@@ -150,6 +151,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addItem = (product: Product, fabric?: FabricSelection) => {
     dispatch({ type: "ADD_ITEM", payload: { product, fabric } });
+    trackAddToCart({ name: product.name, price: product.price, id: product.id });
   };
 
   const removeItem = (key: string) => {

@@ -1,29 +1,38 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import { featuredProjects } from "@/data/gallery";
+import { getStoredValue, STORAGE_KEYS } from "@/lib/storage";
+import { LandingConfig, defaultLandingConfig } from "@/types/landing";
 
 export function Gallery() {
+  const [galleryConfig, setGalleryConfig] = useState(defaultLandingConfig.gallery);
+
+  useEffect(() => {
+    const config = getStoredValue<LandingConfig>(STORAGE_KEYS.LANDING, defaultLandingConfig);
+    setGalleryConfig(config.gallery);
+  }, []);
+
   return (
     <section id="galeria" className="py-20 md:py-32 bg-[var(--muted)]">
       <Container>
         {/* Header */}
         <div className="text-center mb-12">
           <p className="text-[var(--accent)] text-sm font-medium tracking-[0.3em] uppercase mb-4">
-            Proyectos Realizados
+            {galleryConfig.sectionLabel}
           </p>
           <h2
             className="text-3xl md:text-4xl lg:text-5xl font-semibold text-[var(--foreground)] mb-4"
             style={{ fontFamily: "var(--font-playfair), serif" }}
           >
-            Galería de Proyectos
+            {galleryConfig.title}
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Conocé algunos de los espacios que hemos transformado con nuestros
-            muebles de diseño. Cada proyecto es único.
+            {galleryConfig.description}
           </p>
         </div>
 

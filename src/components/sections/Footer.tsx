@@ -19,9 +19,9 @@ const footerLinks = {
     { label: "Contacto", href: "/#contacto" },
   ],
   legal: [
-    { label: "Términos y Condiciones", href: "#" },
-    { label: "Política de Privacidad", href: "#" },
-    { label: "Envíos y Devoluciones", href: "#" },
+    { label: "Términos y Condiciones", href: "/terminos" },
+    { label: "Preguntas Frecuentes", href: "/faq" },
+    { label: "Política de Envíos", href: "/envios" },
     { label: "Garantía", href: "#" },
   ],
 };
@@ -114,12 +114,21 @@ export function Footer() {
             <ul className="space-y-3">
               {footerLinks.legal.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-white/70 hover:text-white transition-colors"
-                  >
-                    {link.label}
-                  </a>
+                  {link.href.startsWith("/") ? (
+                    <Link
+                      href={link.href}
+                      className="text-white/70 hover:text-white transition-colors"
+                    >
+                      {link.label}
+                    </Link>
+                  ) : (
+                    <a
+                      href={link.href}
+                      className="text-white/70 hover:text-white transition-colors"
+                    >
+                      {link.label}
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>
