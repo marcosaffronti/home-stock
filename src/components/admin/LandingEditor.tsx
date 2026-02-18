@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { getStoredValue, setStoredValue, STORAGE_KEYS } from "@/lib/storage";
+import { getStoredValue, setStoredValue, saveToServer, STORAGE_KEYS } from "@/lib/storage";
 import { LandingConfig, defaultLandingConfig, TestimonialItem } from "@/types/landing";
 import { allProducts } from "@/data/products";
 import { uploadImage } from "@/lib/upload";
@@ -37,6 +37,7 @@ export default function LandingEditor() {
 
   const save = () => {
     setStoredValue(STORAGE_KEYS.LANDING, config);
+    saveToServer(STORAGE_KEYS.LANDING, config);
     setSaveMessage("Configuración de landing guardada correctamente");
     setTimeout(() => setSaveMessage(""), 3000);
   };

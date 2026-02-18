@@ -26,6 +26,7 @@ import {
 import CategoryManager, { getCategories, CategoryItem } from "./CategoryManager";
 import MaskPainter from "./MaskPainter";
 import { cn } from "@/lib/utils";
+import { saveToServer, STORAGE_KEYS } from "@/lib/storage";
 
 const STORAGE_KEY = "hs-admin-products";
 
@@ -86,6 +87,7 @@ export default function ProductManager() {
   const saveProducts = (updated: Product[]) => {
     setProducts(updated);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    saveToServer(STORAGE_KEYS.PRODUCTS, updated);
   };
 
   const filteredProducts = useMemo(() => {

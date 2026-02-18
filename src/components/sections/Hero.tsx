@@ -4,15 +4,15 @@ import { useState, useEffect } from "react";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { ArrowRight, Play } from "lucide-react";
-import { getStoredValue, STORAGE_KEYS } from "@/lib/storage";
+import { fetchFromServer, STORAGE_KEYS } from "@/lib/storage";
 import { LandingConfig, defaultLandingConfig } from "@/types/landing";
 
 export function Hero() {
   const [hero, setHero] = useState(defaultLandingConfig.hero);
 
   useEffect(() => {
-    const config = getStoredValue<LandingConfig>(STORAGE_KEYS.LANDING, defaultLandingConfig);
-    setHero(config.hero);
+    fetchFromServer<LandingConfig>(STORAGE_KEYS.LANDING, defaultLandingConfig)
+      .then((config) => setHero(config.hero));
   }, []);
 
   return (

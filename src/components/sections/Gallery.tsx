@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import { featuredProjects as defaultFeaturedProjects, GalleryProject } from "@/data/gallery";
-import { getStoredValue, STORAGE_KEYS } from "@/lib/storage";
+import { fetchFromServer, STORAGE_KEYS } from "@/lib/storage";
 import { LandingConfig, defaultLandingConfig } from "@/types/landing";
 
 export function Gallery() {
@@ -14,14 +14,15 @@ export function Gallery() {
   const [featuredProjects, setFeaturedProjects] = useState(defaultFeaturedProjects);
 
   useEffect(() => {
-    const config = getStoredValue<LandingConfig>(STORAGE_KEYS.LANDING, defaultLandingConfig);
-    setGalleryConfig(config.gallery);
-    // Read gallery projects from localStorage; take first 6 with layout spans
-    const storedProjects = getStoredValue<GalleryProject[] | null>(STORAGE_KEYS.GALLERY, null);
-    if (storedProjects) {
-      const spans = ["col-span-2 row-span-2", "", "", "", "col-span-1 row-span-2", ""];
-      setFeaturedProjects(storedProjects.slice(0, 6).map((p, i) => ({ ...p, span: spans[i] || "" })));
-    }
+    fetchFromServer<LandingConfig>(STORAGE_KEYS.LANDING, defaultLandingConfig)
+      .then((config) => setGalleryConfig(config.gallery));
+    fetchFromServer<GalleryProject[] | null>(STORAGE_KEYS.GALLERY, null)
+      .then((storedProjects) => {
+        if (storedProjects) {
+          const spans = ["col-span-2 row-span-2", "", "", "", "col-span-1 row-span-2", ""];
+          setFeaturedProjects(storedProjects.slice(0, 6).map((p, i) => ({ ...p, span: spans[i] || "" })));
+        }
+      });
   }, []);
 
   return (

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Container } from "@/components/ui/Container";
 import { Truck, Shield, Palette, Users, Award, Wrench } from "lucide-react";
-import { getStoredValue, STORAGE_KEYS } from "@/lib/storage";
+import { fetchFromServer, STORAGE_KEYS } from "@/lib/storage";
 import { LandingConfig, defaultLandingConfig, BenefitItem } from "@/types/landing";
 import type { LucideIcon } from "lucide-react";
 
@@ -14,8 +14,8 @@ export function Benefits() {
   const [config, setConfig] = useState(defaultLandingConfig.benefits);
 
   useEffect(() => {
-    const landing = getStoredValue<LandingConfig>(STORAGE_KEYS.LANDING, defaultLandingConfig);
-    setConfig(landing.benefits);
+    fetchFromServer<LandingConfig>(STORAGE_KEYS.LANDING, defaultLandingConfig)
+      .then((landing) => setConfig(landing.benefits));
   }, []);
 
   return (

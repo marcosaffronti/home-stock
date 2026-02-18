@@ -12,7 +12,7 @@ import { CatalogProductCard } from "@/components/catalog/CatalogProductCard";
 import { ProductDetail } from "@/components/catalog/ProductDetail";
 import { allProducts, categories as defaultCategories } from "@/data/products";
 import { Product } from "@/types/product";
-import { getStoredValue, STORAGE_KEYS } from "@/lib/storage";
+import { fetchFromServer, STORAGE_KEYS } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 
 type SortOption = "default" | "price-asc" | "price-desc" | "name-asc" | "name-desc";
@@ -41,10 +41,12 @@ export function CatalogoPage() {
   const [showSort, setShowSort] = useState(false);
 
   useEffect(() => {
-    const storedCategories = getStoredValue(STORAGE_KEYS.CATEGORIES, defaultCategories);
-    setCategories(storedCategories);
-    const storedProducts = getStoredValue<Product[] | null>(STORAGE_KEYS.PRODUCTS, null);
-    if (storedProducts) setProducts(storedProducts);
+    fetchFromServer(STORAGE_KEYS.CATEGORIES, defaultCategories).then((storedCategories) => {
+      setCategories(storedCategories);
+    });
+    fetchFromServer<Product[] | null>(STORAGE_KEYS.PRODUCTS, null).then((storedProducts) => {
+      if (storedProducts) setProducts(storedProducts);
+    });
   }, []);
 
   const filteredProducts = useMemo(() => {

@@ -30,3 +30,47 @@ export function setStoredValue<T>(key: string, value: T): void {
     // localStorage full or unavailable — silently ignore
   }
 }
+
+// --- Server-side config (JSON file on VPS) ---
+
+// Module-level cache: one fetch per page load, shared by all components
+let _configCache: Record<string, unknown> | null = null;
+let _configPromise: Promise<Record<string, unknown>> | null = null;
+
+function fetchAllConfig(): Promise<Record<string, unknown>> {
+  if (_configCache) return Promise.resolve(_configCache);
+  if (_configPromise) return _configPromise;
+
+  _configPromise = fetch("/api/config")
+    .then((res) => res.json())
+    .then((data) => {
+      _configCache = data;
+      return data;
+    })
+    .catch(() => ({}));
+
+  return _configPromise;
+}
+
+/** Fetch a config value from the server (cached per page load) */
+export async function fetchFromServer<T>(key: string, fallback: T): Promise<T> {
+  const config = await fetchAllConfig();
+  return (config[key] as T) ?? fallback;
+}
+
+/** Save a config value to the server (persisted in JSON file) */
+export async function saveToServer(key: string, value: unknown): Promise<boolean> {
+  try {
+    const res = await fetch("/api/config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key, value }),
+    });
+    // Invalidate cache so next page load gets fresh data
+    _configCache = null;
+    _configPromise = null;
+    return res.ok;
+  } catch {
+    return false;
+  }
+}

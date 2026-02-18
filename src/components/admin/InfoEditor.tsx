@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Save, Info, RotateCcw } from "lucide-react";
-import { getStoredValue, setStoredValue, STORAGE_KEYS } from "@/lib/storage";
+import { getStoredValue, setStoredValue, saveToServer, STORAGE_KEYS } from "@/lib/storage";
 
 const STORAGE_KEY = "hs-admin-info";
 
@@ -56,8 +56,11 @@ export default function InfoEditor() {
   const saveInfo = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(info));
     setStoredValue(STORAGE_KEYS.META_PIXEL_ID, metaPixelId);
+    saveToServer(STORAGE_KEYS.META_PIXEL_ID, metaPixelId);
     setStoredValue(STORAGE_KEYS.GA4_MEASUREMENT_ID, ga4Id);
+    saveToServer(STORAGE_KEYS.GA4_MEASUREMENT_ID, ga4Id);
     setStoredValue(STORAGE_KEYS.CRM_WEBHOOK_URL, crmWebhookUrl);
+    saveToServer(STORAGE_KEYS.CRM_WEBHOOK_URL, crmWebhookUrl);
     setSaveMessage("Información guardada correctamente");
     setTimeout(() => setSaveMessage(""), 3000);
   };

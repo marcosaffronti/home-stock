@@ -6,7 +6,7 @@ import {
   galleryCategories as defaultGalleryCategories,
   GalleryProject,
 } from "@/data/gallery";
-import { getStoredValue, setStoredValue, STORAGE_KEYS } from "@/lib/storage";
+import { getStoredValue, setStoredValue, saveToServer, STORAGE_KEYS } from "@/lib/storage";
 import { uploadImage } from "@/lib/upload";
 import {
   Plus,
@@ -58,11 +58,13 @@ export default function GalleryManager() {
   const saveProjects = (updated: GalleryProject[]) => {
     setProjects(updated);
     setStoredValue(STORAGE_KEYS.GALLERY, updated);
+    saveToServer(STORAGE_KEYS.GALLERY, updated);
   };
 
   const saveGalleryCategories = (updated: string[]) => {
     setGalleryCategories(updated);
     setStoredValue(STORAGE_KEYS.GALLERY_CATEGORIES, updated);
+    saveToServer(STORAGE_KEYS.GALLERY_CATEGORIES, updated);
   };
 
   const showMsg = (msg: string) => {

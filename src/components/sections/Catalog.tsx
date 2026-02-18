@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { ArrowRight } from "lucide-react";
 import { Product } from "@/types/product";
 import { featuredProducts, allProducts } from "@/data/products";
-import { getStoredValue, STORAGE_KEYS } from "@/lib/storage";
+import { fetchFromServer, STORAGE_KEYS } from "@/lib/storage";
 import { LandingConfig, defaultLandingConfig } from "@/types/landing";
 import { FeaturedProductCard } from "./FeaturedProductCard";
 
@@ -16,11 +16,13 @@ export function Catalog() {
   const [storedProducts, setStoredProducts] = useState<Product[] | null>(null);
 
   useEffect(() => {
-    const config = getStoredValue<LandingConfig>(STORAGE_KEYS.LANDING, defaultLandingConfig);
-    setCatalogConfig(config.catalog);
-    setFeaturedIds(config.featuredProductIds);
-    const stored = getStoredValue<Product[] | null>(STORAGE_KEYS.PRODUCTS, null);
-    setStoredProducts(stored);
+    fetchFromServer<LandingConfig>(STORAGE_KEYS.LANDING, defaultLandingConfig)
+      .then((config) => {
+        setCatalogConfig(config.catalog);
+        setFeaturedIds(config.featuredProductIds);
+      });
+    fetchFromServer<Product[] | null>(STORAGE_KEYS.PRODUCTS, null)
+      .then((stored) => setStoredProducts(stored));
   }, []);
 
   const displayProducts = useMemo(() => {

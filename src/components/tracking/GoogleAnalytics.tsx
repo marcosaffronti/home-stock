@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Script from "next/script";
-import { getStoredValue, STORAGE_KEYS } from "@/lib/storage";
+import { fetchFromServer, STORAGE_KEYS } from "@/lib/storage";
 
 // Only allow G-XXXXXXXXXX format
 function sanitizeGa4Id(id: string): string {
@@ -13,8 +13,9 @@ export function GoogleAnalytics() {
   const [measurementId, setMeasurementId] = useState("");
 
   useEffect(() => {
-    const raw = getStoredValue<string>(STORAGE_KEYS.GA4_MEASUREMENT_ID, "");
-    setMeasurementId(sanitizeGa4Id(raw));
+    fetchFromServer<string>(STORAGE_KEYS.GA4_MEASUREMENT_ID, "").then((raw) => {
+      setMeasurementId(sanitizeGa4Id(raw));
+    });
   }, []);
 
   if (!measurementId) return null;

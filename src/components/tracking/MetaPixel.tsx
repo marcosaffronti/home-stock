@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Script from "next/script";
-import { getStoredValue, STORAGE_KEYS } from "@/lib/storage";
+import { fetchFromServer, STORAGE_KEYS } from "@/lib/storage";
 
 // Only allow numeric pixel IDs
 function sanitizePixelId(id: string): string {
@@ -13,8 +13,9 @@ export function MetaPixel() {
   const [pixelId, setPixelId] = useState("");
 
   useEffect(() => {
-    const raw = getStoredValue<string>(STORAGE_KEYS.META_PIXEL_ID, "");
-    setPixelId(sanitizePixelId(raw));
+    fetchFromServer<string>(STORAGE_KEYS.META_PIXEL_ID, "").then((raw) => {
+      setPixelId(sanitizePixelId(raw));
+    });
   }, []);
 
   if (!pixelId) return null;

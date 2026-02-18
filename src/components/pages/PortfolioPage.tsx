@@ -12,7 +12,7 @@ import {
   galleryCategories as defaultGalleryCategories,
   GalleryProject,
 } from "@/data/gallery";
-import { getStoredValue, STORAGE_KEYS } from "@/lib/storage";
+import { fetchFromServer, STORAGE_KEYS } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 
@@ -23,10 +23,12 @@ export function PortfolioPage() {
   const [galleryCategories, setGalleryCategories] = useState(defaultGalleryCategories);
 
   useEffect(() => {
-    const storedProjects = getStoredValue<GalleryProject[] | null>(STORAGE_KEYS.GALLERY, null);
-    if (storedProjects) setAllProjects(storedProjects);
-    const storedCategories = getStoredValue<string[] | null>(STORAGE_KEYS.GALLERY_CATEGORIES, null);
-    if (storedCategories) setGalleryCategories(storedCategories);
+    fetchFromServer<GalleryProject[] | null>(STORAGE_KEYS.GALLERY, null).then((storedProjects) => {
+      if (storedProjects) setAllProjects(storedProjects);
+    });
+    fetchFromServer<string[] | null>(STORAGE_KEYS.GALLERY_CATEGORIES, null).then((storedCategories) => {
+      if (storedCategories) setGalleryCategories(storedCategories);
+    });
   }, []);
 
   const filteredProjects =

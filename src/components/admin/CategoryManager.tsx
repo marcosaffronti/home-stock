@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { categories as defaultCategories } from "@/data/products";
-import { getStoredValue, setStoredValue, STORAGE_KEYS } from "@/lib/storage";
+import { getStoredValue, setStoredValue, saveToServer, STORAGE_KEYS } from "@/lib/storage";
 import { Plus, Trash2, Save, X, Edit, GripVertical } from "lucide-react";
 
 export interface CategoryItem {
@@ -30,6 +30,7 @@ export default function CategoryManager() {
   const saveCategories = (updated: CategoryItem[]) => {
     setCategories(updated);
     setStoredValue(STORAGE_KEYS.CATEGORIES, updated);
+    saveToServer(STORAGE_KEYS.CATEGORIES, updated);
   };
 
   const showMessage = (msg: string) => {

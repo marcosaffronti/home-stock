@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Container } from "@/components/ui/Container";
 import { ChevronLeft, ChevronRight, Star, Quote } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getStoredValue, STORAGE_KEYS } from "@/lib/storage";
+import { fetchFromServer, STORAGE_KEYS } from "@/lib/storage";
 import { LandingConfig, defaultLandingConfig, TestimonialItem } from "@/types/landing";
 
 export function Testimonials() {
@@ -12,8 +12,8 @@ export function Testimonials() {
   const [config, setConfig] = useState(defaultLandingConfig.testimonials);
 
   useEffect(() => {
-    const landing = getStoredValue<LandingConfig>(STORAGE_KEYS.LANDING, defaultLandingConfig);
-    setConfig(landing.testimonials);
+    fetchFromServer<LandingConfig>(STORAGE_KEYS.LANDING, defaultLandingConfig)
+      .then((landing) => setConfig(landing.testimonials));
   }, []);
 
   const items = config.items;
