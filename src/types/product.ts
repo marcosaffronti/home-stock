@@ -32,6 +32,7 @@ export interface Product {
   tag?: "Nuevo" | "Destacado" | "Oferta" | "Agotado";
   featured?: boolean;
   upholstered?: boolean; // default true — set false for wood-only / hilo kraft products
+  fabricMask?: string; // path to B/W mask PNG (white = upholstered area)
   createdAt?: Date;
 }
 

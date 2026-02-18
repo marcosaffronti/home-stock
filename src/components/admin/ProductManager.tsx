@@ -21,8 +21,10 @@ import {
   Upload,
   ImagePlus,
   Tags,
+  Paintbrush,
 } from "lucide-react";
 import CategoryManager, { getCategories, CategoryItem } from "./CategoryManager";
+import MaskPainter from "./MaskPainter";
 import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "hs-admin-products";
@@ -60,6 +62,7 @@ export default function ProductManager() {
   const [uploading, setUploading] = useState(false);
   const [subTab, setSubTab] = useState<ProductSubTab>("list");
   const [dynamicCategories, setDynamicCategories] = useState<CategoryItem[]>([]);
+  const [maskPainterId, setMaskPainterId] = useState<number | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const editImageInputRef = useRef<HTMLInputElement>(null);
   const additionalImageInputRef = useRef<HTMLInputElement>(null);
@@ -113,6 +116,7 @@ export default function ProductManager() {
       tag: product.tag,
       featured: product.featured,
       upholstered: product.upholstered,
+      fabricMask: product.fabricMask,
       stock: product.stock,
       image: product.image,
       images: product.images ? [...product.images] : [],
@@ -212,6 +216,26 @@ export default function ProductManager() {
     const imgs = [...(editForm.images || [])];
     imgs.splice(index, 1);
     setEditForm({ ...editForm, images: imgs });
+  };
+
+  const handleSaveMask = async (productId: number, maskDataUrl: string) => {
+    try {
+      // Convert data URL to blob
+      const res = await fetch(maskDataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], `mask-${productId}.png`, { type: "image/png" });
+      const path = await uploadImage(file, "masks");
+
+      // Update product with mask path
+      const updated = products.map((p) =>
+        p.id === productId ? { ...p, fabricMask: path } : p
+      );
+      saveProducts(updated);
+      setMaskPainterId(null);
+      showMessage("Máscara guardada correctamente");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Error al guardar máscara");
+    }
   };
 
   const resetToDefaults = () => {
@@ -903,28 +927,47 @@ export default function ProductManager() {
                     <tr className="bg-gray-50">
                       <td colSpan={7} className="px-4 py-4">
                         <div className="space-y-4">
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between flex-wrap gap-2">
                             <h4 className="text-sm font-semibold text-[var(--foreground)]" style={{ fontFamily: "var(--font-inter), sans-serif" }}>
                               Descripción y Especificaciones
                             </h4>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ fontFamily: "var(--font-inter), sans-serif" }}>
-                                Tapizado
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => setEditForm({ ...editForm, upholstered: editForm.upholstered === false ? undefined : false })}
-                                className={cn(
-                                  "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
-                                  editForm.upholstered !== false ? "bg-[var(--primary)]" : "bg-gray-300"
-                                )}
-                              >
-                                <span className={cn(
-                                  "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
-                                  editForm.upholstered !== false ? "translate-x-6" : "translate-x-1"
-                                )} />
-                              </button>
-                            </label>
+                            <div className="flex items-center gap-4">
+                              {/* Mask painter button */}
+                              {editForm.upholstered !== false && (
+                                <button
+                                  type="button"
+                                  onClick={() => setMaskPainterId(product.id)}
+                                  className={cn(
+                                    "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border transition-colors",
+                                    product.fabricMask
+                                      ? "border-green-300 bg-green-50 text-green-700 hover:bg-green-100"
+                                      : "border-[var(--border)] text-[var(--primary)] hover:bg-[var(--muted)]"
+                                  )}
+                                  style={{ fontFamily: "var(--font-inter), sans-serif" }}
+                                >
+                                  <Paintbrush className="w-3.5 h-3.5" />
+                                  {product.fabricMask ? "Máscara creada" : "Crear máscara de tela"}
+                                </button>
+                              )}
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <span className="text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ fontFamily: "var(--font-inter), sans-serif" }}>
+                                  Tapizado
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditForm({ ...editForm, upholstered: editForm.upholstered === false ? undefined : false })}
+                                  className={cn(
+                                    "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
+                                    editForm.upholstered !== false ? "bg-[var(--primary)]" : "bg-gray-300"
+                                  )}
+                                >
+                                  <span className={cn(
+                                    "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                                    editForm.upholstered !== false ? "translate-x-6" : "translate-x-1"
+                                  )} />
+                                </button>
+                              </label>
+                            </div>
                           </div>
                           <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider" style={{ fontFamily: "var(--font-inter), sans-serif" }}>
@@ -1015,6 +1058,20 @@ export default function ProductManager() {
       )}
 
       </>}
+
+      {/* Mask Painter Modal */}
+      {maskPainterId && (() => {
+        const p = products.find((pr) => pr.id === maskPainterId);
+        if (!p) return null;
+        return (
+          <MaskPainter
+            productImage={p.image}
+            existingMask={p.fabricMask}
+            onSave={(dataUrl) => handleSaveMask(p.id, dataUrl)}
+            onClose={() => setMaskPainterId(null)}
+          />
+        );
+      })()}
     </div>
   );
 }

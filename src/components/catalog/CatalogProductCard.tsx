@@ -3,6 +3,7 @@
 import { Product } from "@/types/product";
 import { formatPrice } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
+import { useScrollReveal } from "@/hooks/useScrollReveal";
 import Image from "next/image";
 
 interface CatalogProductCardProps {
@@ -12,12 +13,17 @@ interface CatalogProductCardProps {
 }
 
 export function CatalogProductCard({ product, isActive, onClick }: CatalogProductCardProps) {
+  const { ref, isVisible } = useScrollReveal<HTMLButtonElement>();
+
   return (
     <button
+      ref={ref}
       id={`product-${product.id}`}
       onClick={onClick}
       className={cn(
         "text-left bg-white border overflow-hidden group transition-all cursor-pointer w-full",
+        "duration-700 ease-out",
+        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6",
         isActive
           ? "border-[var(--primary)] ring-2 ring-[var(--primary)]/20"
           : "border-[var(--border)] hover:border-[var(--primary)]"
@@ -35,6 +41,11 @@ export function CatalogProductCard({ product, isActive, onClick }: CatalogProduc
         {product.tag && (
           <span className="absolute top-2 left-2 sm:top-4 sm:left-4 bg-[var(--accent)] text-white text-[10px] sm:text-xs px-2 sm:px-3 py-0.5 sm:py-1 font-medium z-10">
             {product.tag}
+          </span>
+        )}
+        {product.stock > 0 && product.stock <= 3 && (
+          <span className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 bg-[var(--foreground)]/80 text-white text-[9px] sm:text-[10px] px-2 py-0.5 font-medium tracking-wide z-10">
+            {product.stock === 1 ? "Último disponible!" : `Solo ${product.stock} disponibles!`}
           </span>
         )}
         {/* Hover overlay — hidden on mobile (touch) */}

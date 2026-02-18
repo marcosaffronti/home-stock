@@ -10,25 +10,22 @@ import { FabricColor } from "@/types/fabric";
 interface FabricSelectorProps {
   onSelect: (fabric: FabricSelection) => void;
   selected?: FabricSelection | null;
-  /** Called with the image URL of the selected swatch (for large preview elsewhere) */
-  onPreviewImage?: (image: string | null) => void;
 }
 
 const VISIBLE_SWATCHES = 8;
 
-export function FabricSelector({ onSelect, selected, onPreviewImage }: FabricSelectorProps) {
+export function FabricSelector({ onSelect, selected }: FabricSelectorProps) {
   const [activeTab, setActiveTab] = useState(fabricTypes[0].id);
   const [expanded, setExpanded] = useState(false);
 
   const activeFabric = fabricTypes.find((f) => f.id === activeTab)!;
-  const visibleColors = expanded
-    ? activeFabric.colors
-    : activeFabric.colors.slice(0, VISIBLE_SWATCHES);
-  const hiddenCount = activeFabric.colors.length - VISIBLE_SWATCHES;
+  const allColors = activeFabric.colors;
+  const visibleColors = expanded ? allColors : allColors.slice(0, VISIBLE_SWATCHES);
+  const hiddenCount = allColors.length - VISIBLE_SWATCHES;
 
   const selectedColor: FabricColor | null =
     selected?.fabricType === activeFabric.name
-      ? activeFabric.colors.find((c) => c.name === selected.colorName) || null
+      ? allColors.find((c) => c.name === selected.colorName) || null
       : null;
 
   const handleSelect = (color: FabricColor) => {
@@ -36,8 +33,8 @@ export function FabricSelector({ onSelect, selected, onPreviewImage }: FabricSel
       fabricType: activeFabric.name,
       colorName: color.name,
       colorHex: color.hex,
+      colorImage: color.image,
     });
-    onPreviewImage?.(color.image || null);
   };
 
   return (
@@ -82,7 +79,7 @@ export function FabricSelector({ onSelect, selected, onPreviewImage }: FabricSel
         )}
       </div>
 
-      {/* Selected info */}
+      {/* Selected info + keyboard hint */}
       {selectedColor && (
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 border border-[var(--primary)] overflow-hidden flex-shrink-0">
@@ -92,7 +89,7 @@ export function FabricSelector({ onSelect, selected, onPreviewImage }: FabricSel
               <div className="w-full h-full" style={{ backgroundColor: selectedColor.hex }} />
             )}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-xs text-[var(--foreground)]/40 tracking-[0.15em] uppercase">
               {activeFabric.name}
             </p>

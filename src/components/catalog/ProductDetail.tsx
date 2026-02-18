@@ -1,14 +1,17 @@
 "use client";
 
 import { useState, Fragment, useEffect, useRef, useCallback } from "react";
-import { X, ShoppingCart, Check, ChevronDown, ArrowLeft, Minus, Plus } from "lucide-react";
+import { X, ShoppingCart, Check, ChevronDown, ArrowLeft, Minus, Plus, MessageCircle, ZoomIn, ChevronLeft, ChevronRight } from "lucide-react";
 import { Product } from "@/types/product";
 import { FabricSelection } from "@/types/fabric";
-import { ImageCarousel } from "@/components/ui/ImageCarousel";
+import { fabricTypes } from "@/data/fabrics";
 import { FabricSelector } from "@/components/catalog/FabricSelector";
+import { FabricPreviewCanvas } from "@/components/catalog/FabricPreviewCanvas";
+import { ImageLightbox } from "@/components/ui/ImageLightbox";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
+import { WHATSAPP_NUMBER } from "@/lib/constants";
 import Image from "next/image";
 
 interface ProductDetailProps {
@@ -18,30 +21,79 @@ interface ProductDetailProps {
 
 export function ProductDetail({ product, onClose }: ProductDetailProps) {
   const [selectedFabric, setSelectedFabric] = useState<FabricSelection | null>(null);
-  const [fabricPreview, setFabricPreview] = useState<string | null>(null);
-  const [showingFabric, setShowingFabric] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
   const [showSpecs, setShowSpecs] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [activeNav, setActiveNav] = useState<'images' | 'fabric'>('images');
   const { addItem } = useCart();
   const sectionRef = useRef<HTMLDivElement>(null);
 
   const isUpholstered = product.upholstered !== false;
-  const hasMultipleImages = product.images && product.images.length > 1;
+  const allImages = product.images && product.images.length > 0 ? product.images : [product.image];
 
   useEffect(() => {
     setSelectedFabric(null);
-    setFabricPreview(null);
-    setShowingFabric(false);
     setShowSpecs(false);
     setQuantity(1);
+    setCurrentImageIndex(0);
+    setLightboxOpen(false);
+    setActiveNav('images');
     sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [product.id]);
 
-  // Close on Escape
+  // Navigate fabric colors (reused by keyboard + floating preview arrows)
+  const navigateFabric = useCallback((dir: 1 | -1) => {
+    if (selectedFabric) {
+      const ft = fabricTypes.find(f => f.name === selectedFabric.fabricType);
+      if (ft) {
+        const idx = ft.colors.findIndex(c => c.name === selectedFabric.colorName);
+        const next = (idx + dir + ft.colors.length) % ft.colors.length;
+        const color = ft.colors[next];
+        setSelectedFabric({
+          fabricType: ft.name,
+          colorName: color.name,
+          colorHex: color.hex,
+          colorImage: color.image,
+        });
+      }
+    } else {
+      const ft = fabricTypes[0];
+      const color = ft.colors[0];
+      setSelectedFabric({
+        fabricType: ft.name,
+        colorName: color.name,
+        colorHex: color.hex,
+        colorImage: color.image,
+      });
+    }
+  }, [selectedFabric]);
+
+  // Keyboard: ←→ navigate based on activeNav (images or fabric)
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === "Escape") onClose();
-  }, [onClose]);
+    if (lightboxOpen) return;
+    if (e.key === "Escape") {
+      onClose();
+      return;
+    }
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      if (activeNav === 'fabric') {
+        navigateFabric(-1);
+      } else if (allImages.length > 1) {
+        setCurrentImageIndex((i) => (i === 0 ? allImages.length - 1 : i - 1));
+      }
+    }
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      if (activeNav === 'fabric') {
+        navigateFabric(1);
+      } else if (allImages.length > 1) {
+        setCurrentImageIndex((i) => (i === allImages.length - 1 ? 0 : i + 1));
+      }
+    }
+  }, [onClose, allImages.length, lightboxOpen, activeNav, navigateFabric]);
 
   useEffect(() => {
     document.addEventListener("keydown", handleKeyDown);
@@ -57,11 +109,6 @@ export function ProductDetail({ product, onClose }: ProductDetailProps) {
       setJustAdded(false);
       setQuantity(1);
     }, 2000);
-  };
-
-  const handleFabricPreview = (image: string | null) => {
-    setFabricPreview(image);
-    if (image) setShowingFabric(true);
   };
 
   return (
@@ -90,84 +137,215 @@ export function ProductDetail({ product, onClose }: ProductDetailProps) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 px-4 sm:px-6 pb-8 sm:pb-12">
           {/* Left — Image area */}
           <div className="relative">
-            {/* Fabric / Product toggle */}
-            {fabricPreview && (
-              <div className="flex gap-1 mb-3">
-                <button
-                  onClick={() => setShowingFabric(false)}
-                  className={cn(
-                    "px-3 py-1.5 text-[11px] font-medium tracking-wide uppercase transition-colors",
-                    !showingFabric
-                      ? "bg-[var(--primary)] text-white"
-                      : "bg-white text-[var(--foreground)]/60 hover:text-[var(--foreground)]"
-                  )}
-                >
-                  Producto
-                </button>
-                <button
-                  onClick={() => setShowingFabric(true)}
-                  className={cn(
-                    "px-3 py-1.5 text-[11px] font-medium tracking-wide uppercase transition-colors",
-                    showingFabric
-                      ? "bg-[var(--primary)] text-white"
-                      : "bg-white text-[var(--foreground)]/60 hover:text-[var(--foreground)]"
-                  )}
-                >
-                  Ver tela
-                </button>
-              </div>
-            )}
-
-            {/* Showing fabric texture full size */}
-            {showingFabric && fabricPreview ? (
-              <div className="relative aspect-square overflow-hidden bg-white border border-[var(--border)]">
-                <img
-                  src={fabricPreview}
-                  alt={selectedFabric?.colorName || "Tela"}
-                  className="w-full h-full object-cover"
-                />
-                {/* Label overlay */}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-4 py-3">
-                  <p className="text-white/70 text-xs tracking-[0.15em] uppercase">
-                    {selectedFabric?.fabricType}
-                  </p>
-                  <p className="text-white font-semibold text-sm">
-                    {selectedFabric?.colorName}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              /* Showing product image */
-              <>
-                {hasMultipleImages ? (
-                  <ImageCarousel
-                    images={product.images!}
-                    alt={product.name}
-                    aspectRatio="aspect-square"
+            {/* Main image area */}
+            <div className="space-y-3">
+              <div
+                className="relative aspect-square overflow-hidden bg-[var(--muted)] cursor-pointer group"
+                onClick={() => { setActiveNav('images'); setLightboxOpen(true); }}
+              >
+                {/* Product image or fabric composite */}
+                {product.fabricMask && selectedFabric?.colorImage ? (
+                  <FabricPreviewCanvas
+                    productImage={allImages[currentImageIndex]}
+                    fabricTexture={selectedFabric.colorImage}
+                    maskImage={product.fabricMask}
+                    alt={`${product.name} en ${selectedFabric.fabricType} ${selectedFabric.colorName}`}
+                    className="absolute inset-0 w-full h-full object-contain"
                   />
                 ) : (
-                  <div className="relative aspect-square overflow-hidden bg-white">
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      fill
-                      sizes="(max-width: 1024px) 100vw, 50vw"
-                      className="object-cover"
-                      priority
+                  <Image
+                    src={allImages[currentImageIndex]}
+                    alt={`${product.name} - ${currentImageIndex + 1}`}
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                    className="object-contain transition-opacity duration-300"
+                    priority
+                  />
+                )}
+
+                {/* Tag (Nuevo, Destacado) */}
+                {product.tag && (
+                  <span className="absolute top-3 left-3 bg-[var(--accent)] text-white text-xs px-3 py-1 font-medium z-10">
+                    {product.tag}
+                  </span>
+                )}
+
+                {/* Fabric label when composite is active */}
+                {product.fabricMask && selectedFabric && (
+                  <div className="absolute top-3 left-3 flex items-center gap-2 bg-white/90 px-2.5 py-1.5 pointer-events-none z-10"
+                    style={product.tag ? { top: "2.75rem" } : undefined}
+                  >
+                    <div
+                      className="w-4 h-4 border border-[var(--border)]"
+                      style={{ backgroundColor: selectedFabric.colorHex }}
                     />
+                    <span className="text-[10px] font-medium text-[var(--foreground)]/70 tracking-wide">
+                      {selectedFabric.fabricType} · {selectedFabric.colorName}
+                    </span>
                   </div>
                 )}
-              </>
-            )}
 
-            {product.tag && !showingFabric && (
-              <span className="absolute top-4 left-4 bg-[var(--accent)] text-white text-xs px-3 py-1 font-medium z-10"
-                style={fabricPreview ? { top: "calc(1rem + 36px)" } : undefined}
-              >
-                {product.tag}
-              </span>
-            )}
+                {/* Floating fabric preview */}
+                {selectedFabric && (
+                  <div
+                    className={cn(
+                      "absolute bottom-3 left-3 z-10 cursor-pointer transition-all",
+                      activeNav === 'fabric'
+                        ? "ring-2 ring-[var(--primary)] shadow-lg"
+                        : "ring-1 ring-white/40 hover:ring-white/70"
+                    )}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveNav('fabric');
+                    }}
+                  >
+                    <div className="relative w-24 h-24 sm:w-36 sm:h-36 overflow-hidden">
+                      {selectedFabric.colorImage ? (
+                        <img
+                          src={selectedFabric.colorImage}
+                          alt={selectedFabric.colorName}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div
+                          className="w-full h-full"
+                          style={{ backgroundColor: selectedFabric.colorHex }}
+                        />
+                      )}
+                      {/* Mini nav arrows */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigateFabric(-1);
+                          setActiveNav('fabric');
+                        }}
+                        className="absolute left-0 top-0 bottom-0 w-7 flex items-center justify-center bg-transparent hover:bg-black/30 text-transparent hover:text-white transition-colors"
+                      >
+                        <ChevronLeft size={14} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigateFabric(1);
+                          setActiveNav('fabric');
+                        }}
+                        className="absolute right-0 top-0 bottom-0 w-7 flex items-center justify-center bg-transparent hover:bg-black/30 text-transparent hover:text-white transition-colors"
+                      >
+                        <ChevronRight size={14} />
+                      </button>
+                    </div>
+                    <div className="bg-black/70 backdrop-blur-sm px-2 py-1">
+                      <p className="text-white/60 text-[8px] sm:text-[9px] tracking-[0.15em] uppercase truncate">
+                        {selectedFabric.fabricType}
+                      </p>
+                      <p className="text-white text-[10px] sm:text-[11px] font-medium truncate">
+                        {selectedFabric.colorName}
+                      </p>
+                    </div>
+                    {activeNav === 'fabric' && (
+                      <div className="absolute -top-2 -right-2 bg-[var(--primary)] text-white text-[8px] px-1.5 py-0.5 font-bold shadow">
+                        ←→
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Zoom hint */}
+                <div className={cn(
+                  "absolute bottom-3 right-3 w-9 h-9 bg-white/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity",
+                  selectedFabric && "bottom-3 right-3"
+                )}>
+                  <ZoomIn size={16} className="text-[var(--foreground)]/60" />
+                </div>
+
+                {/* Prev/Next arrows */}
+                {allImages.length > 1 && (
+                  <>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveNav('images');
+                        setCurrentImageIndex((i) => (i === 0 ? allImages.length - 1 : i - 1));
+                      }}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
+                      aria-label="Imagen anterior"
+                    >
+                      <ChevronLeft size={18} />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveNav('images');
+                        setCurrentImageIndex((i) => (i === allImages.length - 1 ? 0 : i + 1));
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
+                      aria-label="Imagen siguiente"
+                    >
+                      <ChevronRight size={18} />
+                    </button>
+                  </>
+                )}
+
+                {/* Image counter + active indicator */}
+                {allImages.length > 1 && (
+                  <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                    {activeNav === 'images' && selectedFabric && (
+                      <span className="bg-[var(--primary)] text-white text-[8px] px-1.5 py-0.5 font-bold shadow">
+                        ←→
+                      </span>
+                    )}
+                    <span className="bg-black/50 text-white text-[10px] px-2 py-0.5 tabular-nums">
+                      {currentImageIndex + 1} / {allImages.length}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Thumbnails */}
+              {allImages.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {allImages.map((img, i) => (
+                    <button
+                      key={i}
+                      onClick={() => { setActiveNav('images'); setCurrentImageIndex(i); }}
+                      className={cn(
+                        "relative w-16 h-16 sm:w-18 sm:h-18 flex-shrink-0 border overflow-hidden transition-all",
+                        i === currentImageIndex
+                          ? "border-[var(--primary)] ring-1 ring-[var(--primary)]"
+                          : "border-[var(--border)] opacity-60 hover:opacity-100"
+                      )}
+                    >
+                      <Image
+                        src={img}
+                        alt={`${product.name} - miniatura ${i + 1}`}
+                        fill
+                        sizes="80px"
+                        className="object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Keyboard hint */}
+              {selectedFabric && (
+                <p className="hidden sm:block text-[10px] text-[var(--foreground)]/25 text-center mt-1">
+                  Hacé click en la foto o en la tela para navegar con ←→
+                </p>
+              )}
+            </div>
           </div>
+
+          {/* Lightbox */}
+          {lightboxOpen && (
+            <ImageLightbox
+              images={allImages}
+              currentIndex={currentImageIndex}
+              alt={product.name}
+              onClose={() => setLightboxOpen(false)}
+              onChangeIndex={setCurrentImageIndex}
+            />
+          )}
 
           {/* Right — Info */}
           <div className="flex flex-col">
@@ -184,14 +362,25 @@ export function ProductDetail({ product, onClose }: ProductDetailProps) {
               {product.name}
             </h2>
 
-            {/* Price */}
+            {/* Price + stock badge */}
             <div className="flex items-baseline gap-3 mb-4 sm:mb-6">
-              <span className="text-xl sm:text-2xl md:text-3xl font-semibold text-[var(--primary)]">
+              <span
+                className="text-2xl sm:text-3xl md:text-4xl font-normal tracking-tight text-[var(--primary)]"
+                style={{ fontFamily: "var(--font-playfair), serif" }}
+              >
                 {formatPrice(product.price)}
               </span>
               {product.originalPrice && (
-                <span className="text-base sm:text-lg text-[var(--foreground)]/30 line-through">
+                <span
+                  className="text-lg sm:text-xl text-[var(--foreground)]/25 line-through font-light"
+                  style={{ fontFamily: "var(--font-playfair), serif" }}
+                >
                   {formatPrice(product.originalPrice)}
+                </span>
+              )}
+              {product.stock > 0 && product.stock <= 3 && (
+                <span className="text-[10px] font-medium text-[var(--accent)] tracking-[0.15em] uppercase">
+                  {product.stock === 1 ? "Último disponible" : `Solo ${product.stock} disponibles`}
                 </span>
               )}
             </div>
@@ -216,9 +405,8 @@ export function ProductDetail({ product, onClose }: ProductDetailProps) {
                   Elegí tu tela
                 </p>
                 <FabricSelector
-                  onSelect={setSelectedFabric}
+                  onSelect={(fabric) => { setSelectedFabric(fabric); setActiveNav('fabric'); }}
                   selected={selectedFabric}
-                  onPreviewImage={handleFabricPreview}
                 />
               </div>
             ) : (
@@ -331,8 +519,11 @@ export function ProductDetail({ product, onClose }: ProductDetailProps) {
 
               {/* Subtotal */}
               <div className="flex items-center justify-between py-3 border-t border-[var(--border)]">
-                <span className="text-sm text-[var(--foreground)]/50 uppercase tracking-wide">Total</span>
-                <span className="text-xl sm:text-2xl font-semibold text-[var(--primary)]">
+                <span className="text-[11px] text-[var(--foreground)]/40 uppercase tracking-[0.2em]">Total</span>
+                <span
+                  className="text-xl sm:text-2xl font-normal text-[var(--primary)]"
+                  style={{ fontFamily: "var(--font-playfair), serif" }}
+                >
                   {formatPrice(subtotal)}
                 </span>
               </div>
@@ -359,6 +550,19 @@ export function ProductDetail({ product, onClose }: ProductDetailProps) {
                   </>
                 )}
               </button>
+
+              {/* WhatsApp — pre-built message */}
+              <a
+                href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
+                  `Hola! Me interesa ${product.name}${quantity > 1 ? ` × ${quantity}` : ""}${selectedFabric ? ` en ${selectedFabric.fabricType} ${selectedFabric.colorName}` : ""}. ¿Tienen disponibilidad?`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2.5 py-3.5 sm:py-4 px-6 text-sm font-medium tracking-[0.1em] uppercase transition-all bg-[#25D366] text-white hover:bg-[#20BD5A]"
+              >
+                <MessageCircle size={18} />
+                Consultar por WhatsApp
+              </a>
             </div>
           </div>
         </div>

@@ -16,4 +16,5 @@ export interface FabricSelection {
   fabricType: string;
   colorName: string;
   colorHex: string;
+  colorImage?: string;
 }
