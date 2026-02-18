@@ -4,6 +4,8 @@ import { Product } from "@/types/product";
 import { formatPrice } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
+import { useCompare } from "@/context/CompareContext";
+import { ArrowRightLeft } from "lucide-react";
 import Image from "next/image";
 
 interface CatalogProductCardProps {
@@ -14,6 +16,8 @@ interface CatalogProductCardProps {
 
 export function CatalogProductCard({ product, isActive, onClick }: CatalogProductCardProps) {
   const { ref, isVisible } = useScrollReveal<HTMLButtonElement>();
+  const { addItem, removeItem, isSelected } = useCompare();
+  const comparing = isSelected(product.id);
 
   return (
     <button
@@ -54,6 +58,41 @@ export function CatalogProductCard({ product, isActive, onClick }: CatalogProduc
             Ver producto
           </span>
         </div>
+        {/* Compare toggle */}
+        <div
+          className={cn(
+            "absolute top-2 right-2 sm:top-3 sm:right-3 z-10 transition-opacity",
+            comparing ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          )}
+        >
+          <span
+            role="checkbox"
+            aria-checked={comparing}
+            tabIndex={0}
+            title={comparing ? "Quitar de comparación" : "Comparar producto"}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (comparing) removeItem(product.id);
+              else addItem(product);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.stopPropagation();
+                e.preventDefault();
+                if (comparing) removeItem(product.id);
+                else addItem(product);
+              }
+            }}
+            className={cn(
+              "w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center transition-colors cursor-pointer",
+              comparing
+                ? "bg-[var(--primary)] text-white"
+                : "bg-white/80 text-[var(--foreground)]/50 hover:bg-white hover:text-[var(--primary)]"
+            )}
+          >
+            <ArrowRightLeft size={14} />
+          </span>
+        </div>
       </div>
 
       {/* Info */}
@@ -68,7 +107,10 @@ export function CatalogProductCard({ product, isActive, onClick }: CatalogProduc
           {product.name}
         </h3>
         <div className="flex items-baseline gap-1.5 sm:gap-2">
-          <span className="text-[var(--primary)] font-semibold text-base sm:text-lg">
+          <span
+            className="text-[var(--primary)] font-normal text-base sm:text-lg tracking-tight"
+            style={{ fontFamily: "var(--font-playfair), serif" }}
+          >
             {formatPrice(product.price)}
           </span>
           {product.originalPrice && (

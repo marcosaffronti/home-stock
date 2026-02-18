@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Playfair_Display, Inter } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
+import { CompareProvider } from "@/context/CompareContext";
 import { CartSidebar } from "@/components/ui/CartSidebar";
 import { MetaPixel } from "@/components/tracking/MetaPixel";
 import { GoogleAnalytics } from "@/components/tracking/GoogleAnalytics";
@@ -62,8 +63,10 @@ export default function RootLayout({
         className={`${playfair.variable} ${inter.variable} antialiased`}
       >
         <CartProvider>
-          {children}
-          <CartSidebar />
+          <CompareProvider>
+            {children}
+            <CartSidebar />
+          </CompareProvider>
         </CartProvider>
         <MetaPixel />
         <GoogleAnalytics />

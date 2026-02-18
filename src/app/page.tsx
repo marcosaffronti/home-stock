@@ -6,6 +6,7 @@ import { Benefits } from "@/components/sections/Benefits";
 import { Testimonials } from "@/components/sections/Testimonials";
 import { AppointmentBooking } from "@/components/sections/AppointmentBooking";
 import { ContactForm } from "@/components/sections/ContactForm";
+import { StyleQuizSection } from "@/components/sections/StyleQuizSection";
 import { Footer } from "@/components/sections/Footer";
 import { WhatsAppButton } from "@/components/ui/WhatsAppButton";
 
@@ -15,10 +16,11 @@ export default function Home() {
       <Header />
       <Hero />
       <Catalog />
+      <StyleQuizSection />
       <Gallery />
-      <Benefits />
-      <Testimonials />
       <AppointmentBooking />
+      <Testimonials />
+      <Benefits />
       <ContactForm />
       <Footer />
       <WhatsAppButton />

@@ -58,6 +58,7 @@ export function WhatsAppButton() {
       {/* Main Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
+        title={isOpen ? "Cerrar chat" : "Escribinos por WhatsApp"}
         className={cn(
           "w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 hover:scale-110",
           isOpen ? "bg-gray-600" : "bg-[#25D366]"

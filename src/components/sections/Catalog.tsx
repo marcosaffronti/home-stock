@@ -40,7 +40,7 @@ export function Catalog() {
   }, [featuredIds, storedProducts]);
 
   return (
-    <section id="catalogo" className="py-20 md:py-32 bg-white">
+    <section id="catalogo" className="py-14 md:py-24 bg-white">
       <Container>
         {/* Header */}
         <div className="text-center mb-12">

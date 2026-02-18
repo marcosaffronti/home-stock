@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { Container } from "@/components/ui/Container";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
-import { Calendar, Clock, CheckCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, Clock, CheckCircle, ChevronLeft, ChevronRight, MessageCircle } from "lucide-react";
 import { sendToCrm } from "@/lib/crm";
 import { trackLead } from "@/lib/tracking";
+import { WHATSAPP_NUMBER } from "@/lib/constants";
 
 const timeSlots = [
   "10:00",
@@ -208,6 +209,7 @@ function MiniCalendar({
 }
 
 export function AppointmentBooking() {
+  const sectionRef = useRef<HTMLElement>(null);
   const [availableDates] = useState(generateAvailableDates());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
@@ -275,12 +277,24 @@ export function AppointmentBooking() {
     setErrors((prev) => ({ ...prev, date: "" }));
   };
 
+  useEffect(() => {
+    if (submitted && sectionRef.current) {
+      sectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [submitted]);
+
+  const whatsappConfirmUrl = selectedDate && selectedTime
+    ? `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
+        `¡Hola! Acabo de reservar una visita al showroom para el ${selectedDate.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })} a las ${selectedTime} hs. Mi nombre es ${formData.name}. ¡Quedo a la espera de confirmación!`
+      )}`
+    : "#";
+
   if (submitted) {
     return (
-      <section id="agenda" className="py-20 md:py-32 bg-white">
+      <section ref={sectionRef} id="agenda" className="py-14 md:py-24 bg-white">
         <Container>
           <div className="max-w-2xl mx-auto text-center">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="w-20 h-20 bg-green-100 flex items-center justify-center mx-auto mb-6" style={{ borderRadius: 0 }}>
               <CheckCircle size={48} className="text-green-600" />
             </div>
             <h2
@@ -289,7 +303,7 @@ export function AppointmentBooking() {
             >
               ¡Cita confirmada!
             </h2>
-            <p className="text-gray-600 text-lg mb-2">
+            <p className="text-[var(--foreground)]/60 text-lg mb-2">
               Te esperamos el{" "}
               <strong>
                 {selectedDate &&
@@ -301,8 +315,20 @@ export function AppointmentBooking() {
               </strong>{" "}
               a las <strong>{selectedTime} hs</strong>
             </p>
-            <p className="text-gray-500">
+            <p className="text-[var(--foreground)]/40 mb-8">
               Te enviamos un email con los detalles de tu reserva.
+            </p>
+            <a
+              href={whatsappConfirmUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2.5 px-8 py-4 bg-[#25D366] text-white font-medium tracking-[0.1em] uppercase text-sm hover:bg-[#20BD5A] transition-colors"
+            >
+              <MessageCircle size={20} />
+              Confirmá por WhatsApp
+            </a>
+            <p className="text-[var(--foreground)]/30 text-xs mt-4">
+              Escribinos para que te confirmemos tu turno al instante
             </p>
           </div>
         </Container>
@@ -311,7 +337,7 @@ export function AppointmentBooking() {
   }
 
   return (
-    <section id="agenda" className="py-20 md:py-32 bg-white">
+    <section id="agenda" className="py-14 md:py-24 bg-white">
       <Container>
         <div className="max-w-4xl mx-auto">
           {/* Header */}

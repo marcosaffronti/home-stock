@@ -21,8 +21,8 @@ export function Header() {
   const navLinks = isLanding
     ? [
         { label: "Inicio", href: "#inicio" },
-        { label: "Catálogo", href: "#catalogo" },
-        { label: "Galería", href: "#galeria" },
+        { label: "Catálogo", href: "/catalogo" },
+        { label: "Galería", href: "/portfolio" },
         { label: "Nosotros", href: "#nosotros" },
         { label: "Contacto", href: "#contacto" },
       ]
@@ -112,6 +112,7 @@ export function Header() {
               href={`https://wa.me/${WHATSAPP_NUMBER}`}
               target="_blank"
               rel="noopener noreferrer"
+              title="Contactanos por WhatsApp"
               className={cn(
                 "flex items-center gap-2 text-sm transition-colors",
                 showScrolledStyle ? "text-[var(--foreground)]" : "text-white"
@@ -125,6 +126,7 @@ export function Header() {
             <button
               onClick={openCart}
               aria-label="Abrir carrito"
+              title="Abrir carrito"
               className={cn(
                 "relative p-2 transition-colors",
                 showScrolledStyle ? "text-[var(--foreground)]" : "text-white"
@@ -153,6 +155,7 @@ export function Header() {
             <button
               onClick={openCart}
               aria-label="Abrir carrito"
+              title="Abrir carrito"
               className={cn(
                 "relative p-2 transition-colors",
                 showScrolledStyle ? "text-[var(--foreground)]" : "text-white"

@@ -10,9 +10,14 @@ import { Container } from "@/components/ui/Container";
 import { WhatsAppButton } from "@/components/ui/WhatsAppButton";
 import { CatalogProductCard } from "@/components/catalog/CatalogProductCard";
 import { ProductDetail } from "@/components/catalog/ProductDetail";
+import { RecentlyViewed } from "@/components/catalog/RecentlyViewed";
+import { CompareBar } from "@/components/catalog/CompareBar";
+import { CompareModal } from "@/components/catalog/CompareModal";
+import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import { allProducts, categories as defaultCategories } from "@/data/products";
 import { Product } from "@/types/product";
 import { fetchFromServer, STORAGE_KEYS } from "@/lib/storage";
+import { LandingConfig, defaultLandingConfig } from "@/types/landing";
 import { cn } from "@/lib/utils";
 
 type SortOption = "default" | "price-asc" | "price-desc" | "name-asc" | "name-desc";
@@ -39,6 +44,8 @@ export function CatalogoPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("default");
   const [showSort, setShowSort] = useState(false);
+  const [heroImage, setHeroImage] = useState(defaultLandingConfig.hero.backgroundImage);
+  const { recentIds, addViewed } = useRecentlyViewed();
 
   useEffect(() => {
     fetchFromServer(STORAGE_KEYS.CATEGORIES, defaultCategories).then((storedCategories) => {
@@ -46,6 +53,9 @@ export function CatalogoPage() {
     });
     fetchFromServer<Product[] | null>(STORAGE_KEYS.PRODUCTS, null).then((storedProducts) => {
       if (storedProducts) setProducts(storedProducts);
+    });
+    fetchFromServer<LandingConfig>(STORAGE_KEYS.LANDING, defaultLandingConfig).then((config) => {
+      setHeroImage(config.hero.backgroundImage);
     });
   }, []);
 
@@ -97,6 +107,7 @@ export function CatalogoPage() {
         title="Catálogo Completo"
         subtitle="Explorá todos nuestros muebles de diseño. Elegí tu tela y color favorito."
         breadcrumbs={[{ label: "Catálogo" }]}
+        backgroundImage={heroImage}
       />
 
       {/* Product Detail — shown when a product is selected */}
@@ -208,7 +219,7 @@ export function CatalogoPage() {
                 key={product.id}
                 product={product}
                 isActive={selectedProductId === product.id}
-                onClick={() => setSelectedProductId(product.id)}
+                onClick={() => { setSelectedProductId(product.id); addViewed(product.id); }}
               />
             ))}
           </div>
@@ -222,8 +233,21 @@ export function CatalogoPage() {
               </p>
             </div>
           )}
+
+          {/* Recently Viewed */}
+          <RecentlyViewed
+            products={recentIds
+              .map((id) => products.find((p) => p.id === id))
+              .filter((p): p is Product => !!p)}
+            onSelect={(id) => { setSelectedProductId(id); addViewed(id); }}
+            currentProductId={selectedProductId}
+          />
         </Container>
       </section>
+
+      {/* Compare bar + modal */}
+      <CompareBar />
+      <CompareModal />
 
       <Footer />
       <WhatsAppButton />

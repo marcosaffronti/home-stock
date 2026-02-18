@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useState } from "react";
+import { useEffect, useCallback, useState, useRef } from "react";
 import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +14,7 @@ interface ImageLightboxProps {
 
 export function ImageLightbox({ images, currentIndex, alt, onClose, onChangeIndex }: ImageLightboxProps) {
   const [zoomed, setZoomed] = useState(false);
+  const touchStartRef = useRef<{ x: number; y: number; t: number } | null>(null);
 
   const goPrev = useCallback(() => {
     if (zoomed) return;
@@ -80,7 +81,24 @@ export function ImageLightbox({ images, currentIndex, alt, onClose, onChangeInde
       </div>
 
       {/* Image area */}
-      <div className="flex-1 flex items-center justify-center relative min-h-0 px-4 pb-4">
+      <div
+        className="flex-1 flex items-center justify-center relative min-h-0 px-4 pb-4"
+        onTouchStart={(e) => {
+          if (zoomed) return;
+          touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() };
+        }}
+        onTouchEnd={(e) => {
+          if (zoomed || !touchStartRef.current) return;
+          const dx = e.changedTouches[0].clientX - touchStartRef.current.x;
+          const dy = e.changedTouches[0].clientY - touchStartRef.current.y;
+          const dt = Date.now() - touchStartRef.current.t;
+          touchStartRef.current = null;
+          if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5 && dt < 500) {
+            if (dx > 0) goPrev();
+            else goNext();
+          }
+        }}
+      >
         {/* Prev arrow */}
         {images.length > 1 && !zoomed && (
           <button

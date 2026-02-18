@@ -4,7 +4,7 @@ export const fabricTypes: FabricType[] = [
   {
     id: "panne-veluti",
     name: "Panne Veluti",
-    description: "100% Poliéster · Antimanchas · 1.40m ancho · 480 g/m",
+    description: "100% Poliéster · Antimanchas",
     features: [
       "Textura aterciopelada ultra suave al tacto",
       "Alta resistencia al uso diario y al pilling",
@@ -37,7 +37,7 @@ export const fabricTypes: FabricType[] = [
   {
     id: "pana-donn",
     name: "Pana Donn",
-    description: "100% Poliéster · Antimanchas · 1.45m ancho · 370 g/m",
+    description: "100% Poliéster · Antimanchas",
     features: [
       "Pana micro acanalada con caída elegante",
       "Liviana y transpirable, ideal para todo el año",
@@ -77,11 +77,11 @@ export const fabricTypes: FabricType[] = [
   {
     id: "spazio-lino",
     name: "Spazio Lino",
-    description: "100% Poliéster simil lino · Antimanchas · 1.43m ancho · 450 g/m",
+    description: "Lino natural · Antimanchas",
     features: [
-      "Aspecto y textura de lino natural, durabilidad de poliéster",
+      "Lino 100% natural con textura auténtica",
       "Trama rústica que aporta calidez y personalidad",
-      "Antimanchas: resistente a líquidos y suciedad",
+      "Tratamiento antimanchas: resistente a líquidos y suciedad",
       "Alta resistencia a la abrasión y al desgaste",
       "Ideal para estilos nórdicos, rústicos y contemporáneos",
     ],

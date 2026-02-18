@@ -4,6 +4,7 @@ export interface GalleryProject {
   category: string;
   image: string;
   span?: string;
+  beforeImage?: string; // Before image for before/after slider
 }
 
 export const galleryCategories = [
@@ -21,6 +22,7 @@ export const allProjects: GalleryProject[] = [
     title: "Comedor con Sillas Ibiza",
     category: "Comedores",
     image: "/images/gallery/comedor-ibiza.jpg",
+    beforeImage: "/images/gallery/showroom-mesa.jpg",
   },
   {
     id: 2,
@@ -63,6 +65,7 @@ export const allProjects: GalleryProject[] = [
     title: "Comedor de Diseño",
     category: "Comedores",
     image: "/images/gallery/comedor-completo.jpeg",
+    beforeImage: "/images/gallery/comedor-ibiza-2.jpg",
   },
 ];
 

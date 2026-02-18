@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, Fragment, useEffect, useRef, useCallback } from "react";
-import { X, ShoppingCart, Check, ChevronDown, ArrowLeft, Minus, Plus, MessageCircle, ZoomIn, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { X, ShoppingCart, Check, ArrowLeft, Minus, Plus, MessageCircle, ZoomIn, ChevronLeft, ChevronRight, Maximize2, Minimize2, Share2, Scan } from "lucide-react";
 import { Product } from "@/types/product";
 import { FabricSelection } from "@/types/fabric";
 import { fabricTypes } from "@/data/fabrics";
 import { FabricSelector } from "@/components/catalog/FabricSelector";
 import { FabricPreviewCanvas } from "@/components/catalog/FabricPreviewCanvas";
 import { ImageLightbox } from "@/components/ui/ImageLightbox";
+import { StockAlert } from "@/components/catalog/StockAlert";
+import { SizeGuide } from "@/components/catalog/SizeGuide";
+import { RoomVisualizer } from "@/components/catalog/RoomVisualizer";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
@@ -23,24 +26,48 @@ export function ProductDetail({ product, onClose }: ProductDetailProps) {
   const [selectedFabric, setSelectedFabric] = useState<FabricSelection | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
-  const [showSpecs, setShowSpecs] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [activeNav, setActiveNav] = useState<'images' | 'fabric'>('images');
   const { addItem } = useCart();
   const sectionRef = useRef<HTMLDivElement>(null);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
+  const touchStartRef = useRef<{ x: number; y: number; t: number } | null>(null);
+  const [fabricExpanded, setFabricExpanded] = useState(false);
+  const [fabricPos, setFabricPos] = useState<{ x: number; y: number } | null>(null);
+  const isDraggingRef = useRef(false);
+  const dragStartRef = useRef<{ mx: number; my: number; px: number; py: number; moved: boolean } | null>(null);
+  const justDraggedRef = useRef(false);
+  const [fabricSize, setFabricSize] = useState<'sm' | 'lg'>('lg');
+  const [viewerCount, setViewerCount] = useState(0);
+  const [roomVizOpen, setRoomVizOpen] = useState(false);
 
   const isUpholstered = product.upholstered !== false;
   const allImages = product.images && product.images.length > 0 ? product.images : [product.image];
 
   useEffect(() => {
     setSelectedFabric(null);
-    setShowSpecs(false);
     setQuantity(1);
     setCurrentImageIndex(0);
     setLightboxOpen(false);
     setActiveNav('images');
+    setFabricExpanded(false);
+    setFabricPos(null);
+    setFabricSize('lg');
     sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [product.id]);
+
+  // Social proof: dynamic viewer count
+  useEffect(() => {
+    const base = String(product.id).split("").reduce((a: number, c: string) => a + c.charCodeAt(0), 0);
+    setViewerCount((base % 5) + 2);
+    const interval = setInterval(() => {
+      setViewerCount((prev) => {
+        const delta = Math.random() > 0.5 ? 1 : -1;
+        return Math.max(2, Math.min(9, prev + delta));
+      });
+    }, 15000 + Math.random() * 10000);
+    return () => clearInterval(interval);
   }, [product.id]);
 
   // Navigate fabric colors (reused by keyboard + floating preview arrows)
@@ -74,12 +101,13 @@ export function ProductDetail({ product, onClose }: ProductDetailProps) {
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (lightboxOpen) return;
     if (e.key === "Escape") {
+      if (fabricExpanded) { setFabricExpanded(false); return; }
       onClose();
       return;
     }
     if (e.key === "ArrowLeft") {
       e.preventDefault();
-      if (activeNav === 'fabric') {
+      if (fabricExpanded || activeNav === 'fabric') {
         navigateFabric(-1);
       } else if (allImages.length > 1) {
         setCurrentImageIndex((i) => (i === 0 ? allImages.length - 1 : i - 1));
@@ -87,18 +115,91 @@ export function ProductDetail({ product, onClose }: ProductDetailProps) {
     }
     if (e.key === "ArrowRight") {
       e.preventDefault();
-      if (activeNav === 'fabric') {
+      if (fabricExpanded || activeNav === 'fabric') {
         navigateFabric(1);
       } else if (allImages.length > 1) {
         setCurrentImageIndex((i) => (i === allImages.length - 1 ? 0 : i + 1));
       }
     }
-  }, [onClose, allImages.length, lightboxOpen, activeNav, navigateFabric]);
+  }, [onClose, allImages.length, lightboxOpen, activeNav, navigateFabric, fabricExpanded]);
 
   useEffect(() => {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
+
+  // Lock body scroll when fabric is expanded
+  useEffect(() => {
+    if (fabricExpanded) {
+      document.body.style.overflow = "hidden";
+      return () => { document.body.style.overflow = ""; };
+    }
+  }, [fabricExpanded]);
+
+  // Mobile swipe on images
+  const onImageTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() };
+  }, []);
+
+  const onImageTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+    const dx = e.changedTouches[0].clientX - touchStartRef.current.x;
+    const dy = e.changedTouches[0].clientY - touchStartRef.current.y;
+    const dt = Date.now() - touchStartRef.current.t;
+    touchStartRef.current = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5 && dt < 500) {
+      e.preventDefault();
+      if (dx > 0) setCurrentImageIndex((i) => (i === 0 ? allImages.length - 1 : i - 1));
+      else setCurrentImageIndex((i) => (i === allImages.length - 1 ? 0 : i + 1));
+    }
+  }, [allImages.length]);
+
+  // Fabric preview drag (pointer events = mouse + touch unified)
+  const onFabricPointerDown = useCallback((e: React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    const container = imageContainerRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    const el = e.currentTarget as HTMLElement;
+    const elRect = el.getBoundingClientRect();
+    dragStartRef.current = {
+      mx: e.clientX, my: e.clientY,
+      px: elRect.left - rect.left, py: elRect.top - rect.top,
+      moved: false,
+    };
+    isDraggingRef.current = true;
+  }, []);
+
+  const onFabricPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isDraggingRef.current || !dragStartRef.current) return;
+    const dx = e.clientX - dragStartRef.current.mx;
+    const dy = e.clientY - dragStartRef.current.my;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragStartRef.current.moved = true;
+    if (!dragStartRef.current.moved) return;
+    const container = imageContainerRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    const pw = window.innerWidth < 640 ? 96 : 144;
+    const ph = pw + 36;
+    setFabricPos({
+      x: Math.max(0, Math.min(rect.width - pw, dragStartRef.current.px + dx)),
+      y: Math.max(0, Math.min(rect.height - ph, dragStartRef.current.py + dy)),
+    });
+  }, []);
+
+  const onFabricPointerUp = useCallback(() => {
+    if (!isDraggingRef.current) return;
+    if (dragStartRef.current?.moved) {
+      justDraggedRef.current = true;
+      setTimeout(() => { justDraggedRef.current = false; }, 100);
+    } else {
+      setActiveNav("fabric");
+    }
+    isDraggingRef.current = false;
+    dragStartRef.current = null;
+  }, []);
 
   const subtotal = product.price * quantity;
 
@@ -118,6 +219,7 @@ export function ProductDetail({ product, onClose }: ProductDetailProps) {
         <div className="flex items-center justify-between px-4 sm:px-6 pt-4 sm:pt-6 pb-2">
           <button
             onClick={onClose}
+            title="Volver al catálogo"
             className="flex items-center gap-2 text-[var(--foreground)]/50 hover:text-[var(--foreground)] transition-colors"
           >
             <ArrowLeft size={16} />
@@ -127,6 +229,7 @@ export function ProductDetail({ product, onClose }: ProductDetailProps) {
           </button>
           <button
             onClick={onClose}
+            title="Cerrar"
             className="w-10 h-10 flex items-center justify-center text-[var(--foreground)]/40 hover:text-[var(--foreground)] transition-colors"
           >
             <X size={20} />
@@ -140,8 +243,11 @@ export function ProductDetail({ product, onClose }: ProductDetailProps) {
             {/* Main image area */}
             <div className="space-y-3">
               <div
+                ref={imageContainerRef}
                 className="relative aspect-square overflow-hidden bg-[var(--muted)] cursor-pointer group"
-                onClick={() => { setActiveNav('images'); setLightboxOpen(true); }}
+                onClick={() => { if (justDraggedRef.current) return; setActiveNav('images'); setLightboxOpen(true); }}
+                onTouchStart={onImageTouchStart}
+                onTouchEnd={onImageTouchEnd}
               >
                 {/* Product image or fabric composite */}
                 {product.fabricMask && selectedFabric?.colorImage ? (
@@ -185,65 +291,81 @@ export function ProductDetail({ product, onClose }: ProductDetailProps) {
                   </div>
                 )}
 
-                {/* Floating fabric preview */}
+                {/* Floating fabric preview — draggable + resizable */}
                 {selectedFabric && (
                   <div
+                    data-fabric-preview
                     className={cn(
-                      "absolute bottom-3 left-3 z-10 cursor-pointer transition-all",
+                      "absolute z-10 touch-none select-none",
+                      fabricPos ? "" : "bottom-3 left-3",
                       activeNav === 'fabric'
                         ? "ring-2 ring-[var(--primary)] shadow-lg"
-                        : "ring-1 ring-white/40 hover:ring-white/70"
+                        : "ring-1 ring-white/40 hover:ring-white/70",
+                      "cursor-grab active:cursor-grabbing"
                     )}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveNav('fabric');
-                    }}
+                    style={fabricPos ? { left: fabricPos.x, top: fabricPos.y } : undefined}
+                    onPointerDown={onFabricPointerDown}
+                    onPointerMove={onFabricPointerMove}
+                    onPointerUp={onFabricPointerUp}
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <div className="relative w-24 h-24 sm:w-36 sm:h-36 overflow-hidden">
+                    <div className={cn(
+                      "relative overflow-hidden transition-all duration-200",
+                      fabricSize === 'sm'
+                        ? "w-24 h-24 sm:w-36 sm:h-36"
+                        : "w-44 h-44 sm:w-56 sm:h-56"
+                    )}>
                       {selectedFabric.colorImage ? (
                         <img
                           src={selectedFabric.colorImage}
                           alt={selectedFabric.colorName}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover pointer-events-none"
+                          draggable={false}
                         />
                       ) : (
                         <div
-                          className="w-full h-full"
+                          className="w-full h-full pointer-events-none"
                           style={{ backgroundColor: selectedFabric.colorHex }}
                         />
                       )}
-                      {/* Mini nav arrows */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigateFabric(-1);
-                          setActiveNav('fabric');
-                        }}
-                        className="absolute left-0 top-0 bottom-0 w-7 flex items-center justify-center bg-transparent hover:bg-black/30 text-transparent hover:text-white transition-colors"
-                      >
-                        <ChevronLeft size={14} />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigateFabric(1);
-                          setActiveNav('fabric');
-                        }}
-                        className="absolute right-0 top-0 bottom-0 w-7 flex items-center justify-center bg-transparent hover:bg-black/30 text-transparent hover:text-white transition-colors"
-                      >
-                        <ChevronRight size={14} />
-                      </button>
                     </div>
-                    <div className="bg-black/70 backdrop-blur-sm px-2 py-1">
-                      <p className="text-white/60 text-[8px] sm:text-[9px] tracking-[0.15em] uppercase truncate">
-                        {selectedFabric.fabricType}
-                      </p>
-                      <p className="text-white text-[10px] sm:text-[11px] font-medium truncate">
-                        {selectedFabric.colorName}
-                      </p>
+                    {/* Label + actions bar */}
+                    <div className="bg-black/70 backdrop-blur-sm px-2 py-1.5 flex items-center justify-between gap-1">
+                      <div className="min-w-0 pointer-events-none">
+                        <p className="text-white/60 text-[8px] sm:text-[9px] tracking-[0.15em] uppercase truncate">
+                          {selectedFabric.fabricType}
+                        </p>
+                        <p className="text-white text-[10px] sm:text-[11px] font-medium truncate">
+                          {selectedFabric.colorName}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-0.5 flex-shrink-0">
+                        {/* Toggle size */}
+                        <button
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFabricSize(fabricSize === 'sm' ? 'lg' : 'sm');
+                            setFabricPos(null);
+                          }}
+                          className="w-6 h-6 flex items-center justify-center text-white/50 hover:text-white transition-colors"
+                          title={fabricSize === 'sm' ? 'Agrandar' : 'Achicar'}
+                        >
+                          {fabricSize === 'sm' ? <Maximize2 size={11} /> : <Minimize2 size={11} />}
+                        </button>
+                        {/* Fullscreen */}
+                        <button
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onClick={(e) => { e.stopPropagation(); setFabricExpanded(true); }}
+                          className="w-6 h-6 flex items-center justify-center text-white/50 hover:text-white transition-colors"
+                          title="Ver en pantalla completa"
+                        >
+                          <ZoomIn size={11} />
+                        </button>
+                      </div>
                     </div>
                     {activeNav === 'fabric' && (
-                      <div className="absolute -top-2 -right-2 bg-[var(--primary)] text-white text-[8px] px-1.5 py-0.5 font-bold shadow">
+                      <div className="absolute -top-2 -right-2 bg-[var(--primary)] text-white text-[8px] px-1.5 py-0.5 font-bold shadow pointer-events-none">
                         ←→
                       </div>
                     )}
@@ -251,10 +373,13 @@ export function ProductDetail({ product, onClose }: ProductDetailProps) {
                 )}
 
                 {/* Zoom hint */}
-                <div className={cn(
-                  "absolute bottom-3 right-3 w-9 h-9 bg-white/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity",
-                  selectedFabric && "bottom-3 right-3"
-                )}>
+                <div
+                  className={cn(
+                    "absolute bottom-3 right-3 w-9 h-9 bg-white/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity",
+                    selectedFabric && "bottom-3 right-3"
+                  )}
+                  title="Ampliar imagen"
+                >
                   <ZoomIn size={16} className="text-[var(--foreground)]/60" />
                 </div>
 
@@ -269,6 +394,7 @@ export function ProductDetail({ product, onClose }: ProductDetailProps) {
                       }}
                       className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
                       aria-label="Imagen anterior"
+                      title="Imagen anterior"
                     >
                       <ChevronLeft size={18} />
                     </button>
@@ -280,6 +406,7 @@ export function ProductDetail({ product, onClose }: ProductDetailProps) {
                       }}
                       className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
                       aria-label="Imagen siguiente"
+                      title="Imagen siguiente"
                     >
                       <ChevronRight size={18} />
                     </button>
@@ -347,8 +474,81 @@ export function ProductDetail({ product, onClose }: ProductDetailProps) {
             />
           )}
 
+          {/* Expanded fabric fullscreen */}
+          {fabricExpanded && selectedFabric && (
+            <div
+              className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center"
+              onClick={() => setFabricExpanded(false)}
+            >
+              <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
+                <button
+                  onClick={() => setFabricExpanded(false)}
+                  className="w-10 h-10 flex items-center justify-center text-white/60 hover:text-white transition-colors"
+                >
+                  <Minimize2 size={20} />
+                </button>
+                <button
+                  onClick={() => setFabricExpanded(false)}
+                  className="w-10 h-10 flex items-center justify-center text-white/60 hover:text-white transition-colors"
+                >
+                  <X size={22} />
+                </button>
+              </div>
+              <div
+                className="relative w-[85vw] h-[55vh] sm:w-[70vw] sm:h-[70vh] max-w-3xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {selectedFabric.colorImage ? (
+                  <img
+                    src={selectedFabric.colorImage}
+                    alt={selectedFabric.colorName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full" style={{ backgroundColor: selectedFabric.colorHex }} />
+                )}
+                <button
+                  onClick={() => { navigateFabric(-1); setActiveNav('fabric'); }}
+                  className="absolute left-0 top-0 bottom-0 w-14 flex items-center justify-center bg-transparent hover:bg-black/30 text-white/40 hover:text-white transition-colors"
+                >
+                  <ChevronLeft size={32} />
+                </button>
+                <button
+                  onClick={() => { navigateFabric(1); setActiveNav('fabric'); }}
+                  className="absolute right-0 top-0 bottom-0 w-14 flex items-center justify-center bg-transparent hover:bg-black/30 text-white/40 hover:text-white transition-colors"
+                >
+                  <ChevronRight size={32} />
+                </button>
+              </div>
+              <div className="mt-4 text-center" onClick={(e) => e.stopPropagation()}>
+                <p className="text-white/50 text-xs tracking-[0.2em] uppercase">
+                  {selectedFabric.fabricType}
+                </p>
+                <p className="text-white text-lg font-medium mt-1">
+                  {selectedFabric.colorName}
+                </p>
+                <p className="text-white/30 text-xs mt-2">
+                  ← → para cambiar color · ESC para cerrar
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Right — Info */}
           <div className="flex flex-col">
+            {/* Social proof */}
+            {viewerCount > 0 && (
+              <div className="flex items-center gap-2 mb-3">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-500" />
+                </span>
+                <span className="text-[11px] text-[var(--foreground)]/40">
+                  {viewerCount} personas viendo este producto ahora
+                </span>
+              </div>
+            )}
+
             {/* Category */}
             <p className="text-[var(--accent)] text-[11px] sm:text-xs font-medium tracking-[0.25em] uppercase mb-2 sm:mb-3">
               {product.category}
@@ -387,17 +587,38 @@ export function ProductDetail({ product, onClose }: ProductDetailProps) {
 
             {/* Description */}
             {product.description && (
-              <p className="text-sm sm:text-base text-[var(--foreground)]/60 leading-relaxed mb-4 sm:mb-6">
+              <div className="text-sm sm:text-base text-[var(--foreground)]/60 leading-relaxed mb-6 sm:mb-8 whitespace-pre-line">
                 {product.description}
-              </p>
+              </div>
+            )}
+
+            {/* Materials — subtle divider + label */}
+            {(product.specs?.woodType || product.specs?.finish || product.specs?.upholstery || product.dimensions || product.materials?.length) && (
+              <>
+                <div className="border-t border-[var(--border)]/40 mb-4" />
+                <div className="mb-6 sm:mb-8">
+                  <p className="text-[10px] text-[var(--foreground)]/30 tracking-[0.2em] uppercase mb-2">
+                    Materiales
+                  </p>
+                  <div className="text-sm text-[var(--foreground)]/50 space-y-1">
+                    {product.specs?.woodType && <p>Madera: {product.specs.woodType}</p>}
+                    {product.specs?.finish && <p>Terminación: {product.specs.finish}</p>}
+                    {product.specs?.upholstery && <p>{product.specs.upholstery}</p>}
+                    {product.dimensions && (
+                      <p>Medidas: {product.dimensions.width} × {product.dimensions.depth} × {product.dimensions.height} cm</p>
+                    )}
+                    {product.materials?.map((m) => <p key={m}>{m}</p>)}
+                  </div>
+                </div>
+              </>
             )}
 
             {/* Divider */}
-            <div className="border-t border-[var(--border)] mb-4 sm:mb-6" />
+            <div className="border-t border-[var(--border)] mb-6 sm:mb-8" />
 
-            {/* Fabric Selector or Material info */}
-            {isUpholstered ? (
-              <div className="mb-4 sm:mb-6">
+            {/* Fabric Selector */}
+            {isUpholstered && (
+              <div className="mb-6 sm:mb-8">
                 <p
                   className="text-sm font-semibold text-[var(--foreground)] mb-3"
                   style={{ fontFamily: "var(--font-playfair), serif" }}
@@ -409,88 +630,6 @@ export function ProductDetail({ product, onClose }: ProductDetailProps) {
                   selected={selectedFabric}
                 />
               </div>
-            ) : (
-              /* Non-upholstered: show material info */
-              <div className="mb-4 sm:mb-6">
-                <p
-                  className="text-sm font-semibold text-[var(--foreground)] mb-2"
-                  style={{ fontFamily: "var(--font-playfair), serif" }}
-                >
-                  Materiales
-                </p>
-                <div className="text-sm text-[var(--foreground)]/60 space-y-1">
-                  {product.specs?.woodType && <p>Madera: {product.specs.woodType}</p>}
-                  {product.specs?.finish && <p>Terminación: {product.specs.finish}</p>}
-                  {product.specs?.upholstery && <p>{product.specs.upholstery}</p>}
-                  {product.materials?.map((m) => <p key={m}>{m}</p>)}
-                </div>
-              </div>
-            )}
-
-            {/* Specs accordion */}
-            {product.specs && (
-              <div className="border border-[var(--border)] bg-white overflow-hidden mb-4 sm:mb-6">
-                <button
-                  onClick={() => setShowSpecs(!showSpecs)}
-                  className="w-full flex items-center justify-between px-4 sm:px-5 py-3 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
-                >
-                  <span>Especificaciones</span>
-                  <ChevronDown
-                    size={16}
-                    className={cn("transition-transform", showSpecs && "rotate-180")}
-                  />
-                </button>
-                {showSpecs && (
-                  <div className="border-t border-[var(--border)] px-4 sm:px-5 py-4 text-sm">
-                    <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
-                      {product.specs.woodType && (
-                        <>
-                          <dt className="text-[var(--foreground)]/40">Madera</dt>
-                          <dd className="font-medium text-[var(--foreground)]">{product.specs.woodType}</dd>
-                        </>
-                      )}
-                      {product.specs.finish && (
-                        <>
-                          <dt className="text-[var(--foreground)]/40">Terminación</dt>
-                          <dd className="font-medium text-[var(--foreground)]">{product.specs.finish}</dd>
-                        </>
-                      )}
-                      {product.specs.upholstery && (
-                        <>
-                          <dt className="text-[var(--foreground)]/40">Tapizado</dt>
-                          <dd className="font-medium text-[var(--foreground)]">{product.specs.upholstery}</dd>
-                        </>
-                      )}
-                      {product.dimensions && (
-                        <>
-                          <dt className="text-[var(--foreground)]/40">Medidas</dt>
-                          <dd className="font-medium text-[var(--foreground)]">
-                            {product.dimensions.width} × {product.dimensions.depth} × {product.dimensions.height} cm
-                          </dd>
-                        </>
-                      )}
-                      {product.specs.seatHeight && (
-                        <>
-                          <dt className="text-[var(--foreground)]/40">Alto asiento</dt>
-                          <dd className="font-medium text-[var(--foreground)]">{product.specs.seatHeight}</dd>
-                        </>
-                      )}
-                      {product.specs.weight && (
-                        <>
-                          <dt className="text-[var(--foreground)]/40">Peso</dt>
-                          <dd className="font-medium text-[var(--foreground)]">{product.specs.weight}</dd>
-                        </>
-                      )}
-                      {product.specs.customFields?.map((field) => (
-                        <Fragment key={field.label}>
-                          <dt className="text-[var(--foreground)]/40">{field.label}</dt>
-                          <dd className="font-medium text-[var(--foreground)]">{field.value}</dd>
-                        </Fragment>
-                      ))}
-                    </dl>
-                  </div>
-                )}
-              </div>
             )}
 
             {/* Quantity + Total + Add to Cart */}
@@ -501,6 +640,7 @@ export function ProductDetail({ product, onClose }: ProductDetailProps) {
                 <div className="flex items-center border border-[var(--border)]">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    title="Reducir cantidad"
                     className="w-10 h-10 flex items-center justify-center text-[var(--foreground)]/50 hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
                   >
                     <Minus size={16} />
@@ -510,6 +650,7 @@ export function ProductDetail({ product, onClose }: ProductDetailProps) {
                   </span>
                   <button
                     onClick={() => setQuantity(quantity + 1)}
+                    title="Aumentar cantidad"
                     className="w-10 h-10 flex items-center justify-center text-[var(--foreground)]/50 hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
                   >
                     <Plus size={16} />
@@ -531,6 +672,7 @@ export function ProductDetail({ product, onClose }: ProductDetailProps) {
               {/* Add to Cart button */}
               <button
                 onClick={handleAddToCart}
+                title="Agregar al carrito"
                 className={cn(
                   "w-full flex items-center justify-center gap-2.5 py-3.5 sm:py-4 px-6 text-sm font-medium tracking-[0.1em] uppercase transition-all",
                   justAdded
@@ -558,15 +700,62 @@ export function ProductDetail({ product, onClose }: ProductDetailProps) {
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
+                title="Consultar disponibilidad por WhatsApp"
                 className="w-full flex items-center justify-center gap-2.5 py-3.5 sm:py-4 px-6 text-sm font-medium tracking-[0.1em] uppercase transition-all bg-[#25D366] text-white hover:bg-[#20BD5A]"
               >
                 <MessageCircle size={18} />
                 Consultar por WhatsApp
               </a>
+
+              {/* Secondary actions */}
+              <div className="flex gap-2">
+                {/* Share */}
+                <a
+                  title="Compartir producto por WhatsApp"
+                  href={`https://wa.me/?text=${encodeURIComponent(
+                    `Mirá este producto de Home Stock: ${product.name}${selectedFabric ? ` en ${selectedFabric.fabricType} ${selectedFabric.colorName}` : ""} — ${formatPrice(product.price)} https://somoshomestock.com/catalogo?product=${product.id}`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 border border-[var(--border)] text-sm text-[var(--foreground)]/60 hover:border-[var(--primary)] hover:text-[var(--primary)] transition-colors"
+                >
+                  <Share2 size={15} />
+                  Compartir
+                </a>
+                {/* Room Visualizer */}
+                <button
+                  onClick={() => setRoomVizOpen(true)}
+                  title="Visualizá el producto en tu habitación"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 border border-[var(--border)] text-sm text-[var(--foreground)]/60 hover:border-[var(--primary)] hover:text-[var(--primary)] transition-colors"
+                >
+                  <Scan size={15} />
+                  Probá en tu espacio
+                </button>
+              </div>
+
+              {/* Stock alert (only for out-of-stock) */}
+              {product.stock === 0 && (
+                <StockAlert productName={product.name} productId={product.id} />
+              )}
             </div>
+
+            {/* Size Guide */}
+            {product.dimensions && (
+              <div className="mt-6">
+                <SizeGuide dimensions={product.dimensions} productName={product.name} />
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Room Visualizer Modal */}
+      <RoomVisualizer
+        isOpen={roomVizOpen}
+        onClose={() => setRoomVizOpen(false)}
+        productImage={product.image}
+        productName={product.name}
+      />
     </section>
   );
 }

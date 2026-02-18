@@ -47,7 +47,10 @@ export function FeaturedProductCard({ product }: FeaturedProductCardProps) {
           {product.name}
         </h3>
         <div className="flex items-baseline gap-2">
-          <span className="text-[var(--primary)] font-semibold text-lg">
+          <span
+            className="text-[var(--primary)] font-normal text-lg tracking-tight"
+            style={{ fontFamily: "var(--font-playfair), serif" }}
+          >
             {formatPrice(product.price)}
           </span>
           {product.originalPrice && (

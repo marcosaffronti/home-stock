@@ -13,7 +13,9 @@ import {
   GalleryProject,
 } from "@/data/gallery";
 import { fetchFromServer, STORAGE_KEYS } from "@/lib/storage";
+import { LandingConfig, defaultLandingConfig } from "@/types/landing";
 import { cn } from "@/lib/utils";
+import { BeforeAfterSlider } from "@/components/ui/BeforeAfterSlider";
 import Image from "next/image";
 
 export function PortfolioPage() {
@@ -21,6 +23,7 @@ export function PortfolioPage() {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [allProjects, setAllProjects] = useState(defaultProjects);
   const [galleryCategories, setGalleryCategories] = useState(defaultGalleryCategories);
+  const [heroImage, setHeroImage] = useState(defaultLandingConfig.hero.backgroundImage);
 
   useEffect(() => {
     fetchFromServer<GalleryProject[] | null>(STORAGE_KEYS.GALLERY, null).then((storedProjects) => {
@@ -28,6 +31,9 @@ export function PortfolioPage() {
     });
     fetchFromServer<string[] | null>(STORAGE_KEYS.GALLERY_CATEGORIES, null).then((storedCategories) => {
       if (storedCategories) setGalleryCategories(storedCategories);
+    });
+    fetchFromServer<LandingConfig>(STORAGE_KEYS.LANDING, defaultLandingConfig).then((config) => {
+      setHeroImage(config.hero.backgroundImage);
     });
   }, []);
 
@@ -79,9 +85,10 @@ export function PortfolioPage() {
         title="Portfolio"
         subtitle="Cada proyecto es único. Descubrí los espacios que hemos transformado."
         breadcrumbs={[{ label: "Portfolio" }]}
+        backgroundImage={heroImage}
       />
 
-      <section className="py-20 md:py-32 bg-[var(--foreground)]">
+      <section className="py-20 md:py-32 bg-white">
         <Container>
           {/* Category Filters */}
           <div className="flex flex-wrap justify-center gap-2 mb-12">
@@ -95,8 +102,8 @@ export function PortfolioPage() {
                 className={cn(
                   "px-5 py-2 text-sm font-medium transition-all duration-300",
                   activeCategory === cat
-                    ? "bg-[var(--accent)] text-white"
-                    : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
+                    ? "bg-[var(--primary)] text-white"
+                    : "bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--secondary)]"
                 )}
               >
                 {cat}
@@ -140,13 +147,51 @@ export function PortfolioPage() {
 
           {filteredProjects.length === 0 && (
             <div className="text-center py-20">
-              <p className="text-white/50 text-lg">
+              <p className="text-[var(--foreground)]/50 text-lg">
                 No hay proyectos en esta categoría.
               </p>
             </div>
           )}
         </Container>
       </section>
+
+      {/* Before / After Section */}
+      {allProjects.some((p) => p.beforeImage) && (
+        <section className="py-16 md:py-24 bg-[var(--muted)]">
+          <Container>
+            <div className="text-center mb-10">
+              <p className="text-[var(--accent)] text-sm font-medium tracking-[0.3em] uppercase mb-3">
+                Transformaciones
+              </p>
+              <h2
+                className="text-2xl md:text-3xl font-semibold text-[var(--foreground)]"
+                style={{ fontFamily: "var(--font-playfair), serif" }}
+              >
+                Antes & Después
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {allProjects
+                .filter((p) => p.beforeImage)
+                .map((project) => (
+                  <div key={project.id}>
+                    <BeforeAfterSlider
+                      beforeImage={project.beforeImage!}
+                      afterImage={project.image}
+                      className="aspect-[4/3]"
+                    />
+                    <p
+                      className="mt-3 text-sm font-medium text-[var(--foreground)]"
+                      style={{ fontFamily: "var(--font-playfair), serif" }}
+                    >
+                      {project.title}
+                    </p>
+                  </div>
+                ))}
+            </div>
+          </Container>
+        </section>
+      )}
 
       {/* Lightbox */}
       {lightboxIndex !== null && (

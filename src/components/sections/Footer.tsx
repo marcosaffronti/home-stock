@@ -1,7 +1,8 @@
 "use client";
 
 import { Container } from "@/components/ui/Container";
-import { Instagram, Facebook, Linkedin, Youtube, ArrowUp } from "lucide-react";
+import { Instagram, MessageCircle, ArrowUp } from "lucide-react";
+import { WHATSAPP_NUMBER } from "@/lib/constants";
 import Link from "next/link";
 
 const footerLinks = {
@@ -27,10 +28,8 @@ const footerLinks = {
 };
 
 const socialLinks = [
-  { icon: Instagram, href: "https://instagram.com/homestock", label: "Instagram" },
-  { icon: Facebook, href: "https://facebook.com/homestock", label: "Facebook" },
-  { icon: Linkedin, href: "https://linkedin.com/company/homestock", label: "LinkedIn" },
-  { icon: Youtube, href: "https://youtube.com/homestock", label: "YouTube" },
+  { icon: Instagram, href: "https://www.instagram.com/somoshomestock/?hl=es-la", label: "Instagram" },
+  { icon: MessageCircle, href: `https://wa.me/${WHATSAPP_NUMBER}`, label: "WhatsApp" },
 ];
 
 export function Footer() {
@@ -67,6 +66,7 @@ export function Footer() {
                   rel="noopener noreferrer"
                   className="w-10 h-10 border border-white/20 flex items-center justify-center hover:bg-white hover:text-[var(--foreground)] transition-colors"
                   aria-label={social.label}
+                  title={social.label}
                 >
                   <social.icon size={18} />
                 </a>
@@ -157,6 +157,7 @@ export function Footer() {
               onClick={scrollToTop}
               className="w-10 h-10 border border-white/20 flex items-center justify-center hover:bg-white hover:text-[var(--foreground)] transition-colors"
               aria-label="Volver arriba"
+              title="Volver arriba"
             >
               <ArrowUp size={18} />
             </button>

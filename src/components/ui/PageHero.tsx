@@ -13,12 +13,22 @@ interface PageHeroProps {
   title: string;
   subtitle?: string;
   breadcrumbs?: Breadcrumb[];
+  backgroundImage?: string;
 }
 
-export function PageHero({ title, subtitle, breadcrumbs }: PageHeroProps) {
+export function PageHero({ title, subtitle, breadcrumbs, backgroundImage }: PageHeroProps) {
   return (
-    <section className="bg-[var(--foreground)] pt-28 pb-12 md:pt-32 md:pb-16">
-      <Container>
+    <section className="relative bg-[var(--foreground)] pt-28 pb-16 md:pt-36 md:pb-20 overflow-hidden">
+      {backgroundImage && (
+        <>
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: `url('${backgroundImage}')` }}
+          />
+          <div className="absolute inset-0 bg-black/60" />
+        </>
+      )}
+      <Container className="relative z-10">
         {breadcrumbs && breadcrumbs.length > 0 && (
           <nav className="flex items-center gap-1 text-sm text-white/50 mb-4">
             <Link href="/" className="hover:text-white transition-colors">

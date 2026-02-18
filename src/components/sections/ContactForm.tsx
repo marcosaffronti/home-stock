@@ -88,7 +88,7 @@ export function ContactForm() {
   };
 
   return (
-    <section id="contacto" className="py-20 md:py-32 bg-[var(--muted)]">
+    <section id="contacto" className="py-14 md:py-20 bg-[var(--muted)]">
       <Container>
         <div className="grid lg:grid-cols-2 gap-16">
           {/* Left - Contact Info */}
