@@ -297,15 +297,13 @@ export default function ProductManager() {
       {subTab === "list" && <>
 
       {/* Info Banner */}
-      <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-xl p-4">
-        <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+      <div className="flex items-start gap-3 bg-green-50 border border-green-200 rounded-xl p-4">
+        <Info className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
         <p
-          className="text-sm text-blue-800"
+          className="text-sm text-green-800"
           style={{ fontFamily: "var(--font-inter), sans-serif" }}
         >
-          Los cambios en los productos se guardan en el almacenamiento local del
-          navegador. Para reflejarlos permanentemente en el sitio, contactá al
-          equipo de desarrollo.
+          Los cambios se guardan en el servidor y se reflejan en la web para todos los visitantes.
         </p>
       </div>
 
