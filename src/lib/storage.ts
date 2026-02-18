@@ -41,7 +41,7 @@ function fetchAllConfig(): Promise<Record<string, unknown>> {
   if (_configCache) return Promise.resolve(_configCache);
   if (_configPromise) return _configPromise;
 
-  _configPromise = fetch("/api/config")
+  _configPromise = fetch("/api/config", { cache: "no-store" })
     .then((res) => res.json())
     .then((data) => {
       _configCache = data;

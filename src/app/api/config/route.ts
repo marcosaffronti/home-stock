@@ -22,14 +22,19 @@ function writeConfig(config: Record<string, unknown>) {
   fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), "utf-8");
 }
 
+const NO_CACHE_HEADERS = {
+  "Cache-Control": "no-cache, no-store, must-revalidate",
+  "Pragma": "no-cache",
+};
+
 export async function GET(req: NextRequest) {
   const key = req.nextUrl.searchParams.get("key");
   const config = readConfig();
 
   if (key) {
-    return NextResponse.json({ value: config[key] ?? null });
+    return NextResponse.json({ value: config[key] ?? null }, { headers: NO_CACHE_HEADERS });
   }
-  return NextResponse.json(config);
+  return NextResponse.json(config, { headers: NO_CACHE_HEADERS });
 }
 
 export async function POST(req: NextRequest) {
