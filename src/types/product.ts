@@ -1,3 +1,5 @@
+import { FabricSelection } from "./fabric";
+
 export interface Product {
   id: number;
   name: string;
@@ -18,12 +20,14 @@ export interface Product {
   colors?: string[];
   stock: number;
   tag?: "Nuevo" | "Destacado" | "Oferta" | "Agotado";
+  featured?: boolean;
   createdAt?: Date;
 }
 
 export interface CartItem {
   product: Product;
   quantity: number;
+  fabric?: FabricSelection;
 }
 
 export interface Cart {

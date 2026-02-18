@@ -1,142 +1,16 @@
 "use client";
 
-import { useState } from "react";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
-import { cn } from "@/lib/utils";
 import { Heart, Eye, ArrowRight, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import { useCart } from "@/context/CartContext";
 import { Product } from "@/types/product";
-
-const categories = [
-  { id: "all", label: "Todos" },
-  { id: "sillas", label: "Sillas" },
-  { id: "cabeceras", label: "Cabeceras" },
-  { id: "mesas", label: "Mesas" },
-  { id: "poltronas", label: "Poltronas" },
-];
-
-const products: Product[] = [
-  {
-    id: 1,
-    name: "Silla Wishbone",
-    slug: "silla-wishbone",
-    category: "sillas",
-    price: 190000,
-    image: "/images/products/silla-wishbone.jpeg",
-    tag: "Destacado",
-    stock: 10,
-  },
-  {
-    id: 2,
-    name: "Silla Wishbone Black",
-    slug: "silla-wishbone-black",
-    category: "sillas",
-    price: 190000,
-    image: "/images/products/silla-wishbone-black.jpeg",
-    tag: "Nuevo",
-    stock: 8,
-  },
-  {
-    id: 3,
-    name: "Silla Emma",
-    slug: "silla-emma",
-    category: "sillas",
-    price: 220000,
-    image: "/images/products/silla-emma.jpeg",
-    stock: 12,
-  },
-  {
-    id: 4,
-    name: "Silla Lola",
-    slug: "silla-lola",
-    category: "sillas",
-    price: 110000,
-    image: "/images/products/silla-lola.jpeg",
-    stock: 15,
-  },
-  {
-    id: 5,
-    name: "Silla Moller",
-    slug: "silla-moller",
-    category: "sillas",
-    price: 185000,
-    image: "/images/products/silla-moller.jpeg",
-    stock: 10,
-  },
-  {
-    id: 6,
-    name: "Silla Teca Tapizada",
-    slug: "silla-teca-tapizada",
-    category: "sillas",
-    price: 135000,
-    image: "/images/products/silla-teca-tapizada.jpeg",
-    stock: 8,
-  },
-  {
-    id: 7,
-    name: "Cabecera Ibiza",
-    slug: "cabecera-ibiza",
-    category: "cabeceras",
-    price: 190000,
-    image: "/images/products/cabecera-ibiza.jpeg",
-    stock: 6,
-  },
-  {
-    id: 8,
-    name: "Poltrona Petiribi",
-    slug: "poltrona-petiribi",
-    category: "poltronas",
-    price: 240000,
-    image: "/images/products/poltrona-petiribi.jpg",
-    stock: 4,
-  },
-  {
-    id: 9,
-    name: "Mesa Petiribi Carpintera",
-    slug: "mesa-petiribi-carpintera",
-    category: "mesas",
-    price: 850000,
-    image: "/images/products/mesa-petiribi-carpintera.jpg",
-    stock: 3,
-  },
-  {
-    id: 10,
-    name: "Mesa Tablero",
-    slug: "mesa-tablero",
-    category: "mesas",
-    price: 950000,
-    image: "/images/products/mesa-tablero.jpg",
-    stock: 2,
-  },
-  {
-    id: 11,
-    name: "Silla Teca",
-    slug: "silla-teca",
-    category: "sillas",
-    price: 115000,
-    image: "/images/products/silla-teca.jpg",
-    stock: 10,
-  },
-];
-
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    minimumFractionDigits: 0,
-  }).format(price);
-};
+import { featuredProducts } from "@/data/products";
+import { formatPrice } from "@/lib/formatters";
 
 export function Catalog() {
-  const [activeCategory, setActiveCategory] = useState("all");
   const { addItem } = useCart();
-
-  const filteredProducts =
-    activeCategory === "all"
-      ? products
-      : products.filter((p) => p.category === activeCategory);
 
   const handleAddToCart = (product: Product) => {
     addItem(product);
@@ -162,27 +36,9 @@ export function Catalog() {
           </p>
         </div>
 
-        {/* Category Filters */}
-        <div className="flex flex-wrap justify-center gap-2 mb-12">
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setActiveCategory(cat.id)}
-              className={cn(
-                "px-6 py-2 text-sm font-medium transition-all duration-300",
-                activeCategory === cat.id
-                  ? "bg-[var(--primary)] text-white"
-                  : "bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--secondary)]"
-              )}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
-
         {/* Products Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {filteredProducts.map((product) => (
+          {featuredProducts.slice(0, 8).map((product) => (
             <div
               key={product.id}
               className="group relative bg-white border border-[var(--border)] overflow-hidden"
@@ -241,7 +97,7 @@ export function Catalog() {
 
         {/* CTA */}
         <div className="text-center mt-12">
-          <Button variant="outline" size="lg" href="#contacto" className="group">
+          <Button variant="outline" size="lg" href="/catalogo" className="group">
             Ver Catálogo Completo
             <ArrowRight
               size={20}

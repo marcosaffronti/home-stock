@@ -2,6 +2,12 @@
 
 import { createContext, useContext, useReducer, ReactNode, useEffect } from "react";
 import { Product, CartItem } from "@/types/product";
+import { FabricSelection } from "@/types/fabric";
+
+function getCartItemKey(productId: number, fabric?: FabricSelection): string {
+  if (!fabric) return String(productId);
+  return `${productId}-${fabric.fabricType}-${fabric.colorName}`;
+}
 
 interface CartState {
   items: CartItem[];
@@ -9,9 +15,9 @@ interface CartState {
 }
 
 type CartAction =
-  | { type: "ADD_ITEM"; payload: Product }
-  | { type: "REMOVE_ITEM"; payload: number }
-  | { type: "UPDATE_QUANTITY"; payload: { productId: number; quantity: number } }
+  | { type: "ADD_ITEM"; payload: { product: Product; fabric?: FabricSelection } }
+  | { type: "REMOVE_ITEM"; payload: string }
+  | { type: "UPDATE_QUANTITY"; payload: { key: string; quantity: number } }
   | { type: "CLEAR_CART" }
   | { type: "TOGGLE_CART" }
   | { type: "OPEN_CART" }
@@ -26,8 +32,10 @@ const initialState: CartState = {
 function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
     case "ADD_ITEM": {
+      const { product, fabric } = action.payload;
+      const key = getCartItemKey(product.id, fabric);
       const existingItem = state.items.find(
-        (item) => item.product.id === action.payload.id
+        (item) => getCartItemKey(item.product.id, item.fabric) === key
       );
 
       if (existingItem) {
@@ -35,7 +43,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
           ...state,
           isOpen: true,
           items: state.items.map((item) =>
-            item.product.id === action.payload.id
+            getCartItemKey(item.product.id, item.fabric) === key
               ? { ...item, quantity: item.quantity + 1 }
               : item
           ),
@@ -45,14 +53,16 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       return {
         ...state,
         isOpen: true,
-        items: [...state.items, { product: action.payload, quantity: 1 }],
+        items: [...state.items, { product, quantity: 1, fabric }],
       };
     }
 
     case "REMOVE_ITEM":
       return {
         ...state,
-        items: state.items.filter((item) => item.product.id !== action.payload),
+        items: state.items.filter(
+          (item) => getCartItemKey(item.product.id, item.fabric) !== action.payload
+        ),
       };
 
     case "UPDATE_QUANTITY":
@@ -60,14 +70,14 @@ function cartReducer(state: CartState, action: CartAction): CartState {
         return {
           ...state,
           items: state.items.filter(
-            (item) => item.product.id !== action.payload.productId
+            (item) => getCartItemKey(item.product.id, item.fabric) !== action.payload.key
           ),
         };
       }
       return {
         ...state,
         items: state.items.map((item) =>
-          item.product.id === action.payload.productId
+          getCartItemKey(item.product.id, item.fabric) === action.payload.key
             ? { ...item, quantity: action.payload.quantity }
             : item
         ),
@@ -98,13 +108,14 @@ interface CartContextType {
   isOpen: boolean;
   total: number;
   itemCount: number;
-  addItem: (product: Product) => void;
-  removeItem: (productId: number) => void;
-  updateQuantity: (productId: number, quantity: number) => void;
+  addItem: (product: Product, fabric?: FabricSelection) => void;
+  removeItem: (key: string) => void;
+  updateQuantity: (key: string, quantity: number) => void;
   clearCart: () => void;
   toggleCart: () => void;
   openCart: () => void;
   closeCart: () => void;
+  getItemKey: (item: CartItem) => string;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -137,16 +148,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const itemCount = state.items.reduce((sum, item) => sum + item.quantity, 0);
 
-  const addItem = (product: Product) => {
-    dispatch({ type: "ADD_ITEM", payload: product });
+  const addItem = (product: Product, fabric?: FabricSelection) => {
+    dispatch({ type: "ADD_ITEM", payload: { product, fabric } });
   };
 
-  const removeItem = (productId: number) => {
-    dispatch({ type: "REMOVE_ITEM", payload: productId });
+  const removeItem = (key: string) => {
+    dispatch({ type: "REMOVE_ITEM", payload: key });
   };
 
-  const updateQuantity = (productId: number, quantity: number) => {
-    dispatch({ type: "UPDATE_QUANTITY", payload: { productId, quantity } });
+  const updateQuantity = (key: string, quantity: number) => {
+    dispatch({ type: "UPDATE_QUANTITY", payload: { key, quantity } });
   };
 
   const clearCart = () => {
@@ -165,6 +176,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "CLOSE_CART" });
   };
 
+  const getItemKey = (item: CartItem) => getCartItemKey(item.product.id, item.fabric);
+
   return (
     <CartContext.Provider
       value={{
@@ -179,6 +192,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         toggleCart,
         openCart,
         closeCart,
+        getItemKey,
       }}
     >
       {children}

@@ -6,21 +6,19 @@ import { Button } from "./Button";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { WHATSAPP_NUMBER } from "@/lib/constants";
+import { formatPrice } from "@/lib/formatters";
 
 export function CartSidebar() {
-  const { items, isOpen, closeCart, total, itemCount, updateQuantity, removeItem } = useCart();
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("es-AR", {
-      style: "currency",
-      currency: "ARS",
-      minimumFractionDigits: 0,
-    }).format(price);
-  };
+  const { items, isOpen, closeCart, total, itemCount, updateQuantity, removeItem, getItemKey } = useCart();
 
   const handleCheckout = () => {
     const itemsList = items
-      .map((item) => `- ${item.product.name} x${item.quantity} (${formatPrice(item.product.price * item.quantity)})`)
+      .map((item) => {
+        const fabricInfo = item.fabric
+          ? ` (${item.fabric.fabricType} - ${item.fabric.colorName})`
+          : "";
+        return `- ${item.product.name}${fabricInfo} x${item.quantity} (${formatPrice(item.product.price * item.quantity)})`;
+      })
       .join("\n");
     const message = `Hola! Me gustaría hacer el siguiente pedido:\n\n${itemsList}\n\n*Total: ${formatPrice(total)}*\n\n¿Podrían confirmarme disponibilidad y forma de envío?`;
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
@@ -75,74 +73,84 @@ export function CartSidebar() {
               <p className="text-gray-400 text-sm mb-6">
                 Explorá nuestro catálogo y agregá productos
               </p>
-              <Button href="#catalogo" onClick={closeCart}>
+              <Button href="/catalogo" onClick={closeCart}>
                 Ver Catálogo
               </Button>
             </div>
           ) : (
             <div className="space-y-6">
-              {items.map((item) => (
-                <div
-                  key={item.product.id}
-                  className="flex gap-4 pb-6 border-b border-[var(--border)] last:border-0"
-                >
-                  {/* Image */}
-                  <div className="relative w-24 h-24 bg-[var(--muted)] flex-shrink-0">
-                    <Image
-                      src={item.product.image}
-                      alt={item.product.name}
-                      fill
-                      sizes="96px"
-                      className="object-cover"
-                    />
-                  </div>
+              {items.map((item) => {
+                const key = getItemKey(item);
+                return (
+                  <div
+                    key={key}
+                    className="flex gap-4 pb-6 border-b border-[var(--border)] last:border-0"
+                  >
+                    {/* Image */}
+                    <div className="relative w-24 h-24 bg-[var(--muted)] flex-shrink-0">
+                      <Image
+                        src={item.product.image}
+                        alt={item.product.name}
+                        fill
+                        sizes="96px"
+                        className="object-cover"
+                      />
+                    </div>
 
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-[var(--foreground)] mb-1 truncate">
-                      {item.product.name}
-                    </h3>
-                    <p className="text-[var(--primary)] font-semibold mb-3">
-                      {formatPrice(item.product.price)}
-                    </p>
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-[var(--foreground)] mb-1 truncate">
+                        {item.product.name}
+                      </h3>
+                      {item.fabric && (
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <div
+                            className="w-3 h-3 rounded-full border border-gray-300"
+                            style={{ backgroundColor: item.fabric.colorHex }}
+                          />
+                          <span className="text-xs text-gray-500">
+                            {item.fabric.fabricType} - {item.fabric.colorName}
+                          </span>
+                        </div>
+                      )}
+                      <p className="text-[var(--primary)] font-semibold mb-3">
+                        {formatPrice(item.product.price)}
+                      </p>
 
-                    {/* Quantity Controls */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center border border-[var(--border)]">
+                      {/* Quantity Controls */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center border border-[var(--border)]">
+                          <button
+                            onClick={() => updateQuantity(key, item.quantity - 1)}
+                            aria-label="Reducir cantidad"
+                            className="p-2 hover:bg-[var(--muted)] transition-colors"
+                          >
+                            <Minus size={14} />
+                          </button>
+                          <span className="px-4 py-2 text-sm font-medium">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() => updateQuantity(key, item.quantity + 1)}
+                            aria-label="Aumentar cantidad"
+                            className="p-2 hover:bg-[var(--muted)] transition-colors"
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
+
                         <button
-                          onClick={() =>
-                            updateQuantity(item.product.id, item.quantity - 1)
-                          }
-                          aria-label="Reducir cantidad"
-                          className="p-2 hover:bg-[var(--muted)] transition-colors"
+                          onClick={() => removeItem(key)}
+                          aria-label="Eliminar producto"
+                          className="p-2 text-red-500 hover:bg-red-50 rounded transition-colors"
                         >
-                          <Minus size={14} />
-                        </button>
-                        <span className="px-4 py-2 text-sm font-medium">
-                          {item.quantity}
-                        </span>
-                        <button
-                          onClick={() =>
-                            updateQuantity(item.product.id, item.quantity + 1)
-                          }
-                          aria-label="Aumentar cantidad"
-                          className="p-2 hover:bg-[var(--muted)] transition-colors"
-                        >
-                          <Plus size={14} />
+                          <Trash2 size={18} />
                         </button>
                       </div>
-
-                      <button
-                        onClick={() => removeItem(item.product.id)}
-                        aria-label="Eliminar producto"
-                        className="p-2 text-red-500 hover:bg-red-50 rounded transition-colors"
-                      >
-                        <Trash2 size={18} />
-                      </button>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

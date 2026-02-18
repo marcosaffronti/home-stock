@@ -2,21 +2,21 @@
 
 import { Container } from "@/components/ui/Container";
 import { Instagram, Facebook, Linkedin, Youtube, ArrowUp } from "lucide-react";
+import Link from "next/link";
 
 const footerLinks = {
   productos: [
-    { label: "Living", href: "#catalogo" },
-    { label: "Comedor", href: "#catalogo" },
-    { label: "Dormitorio", href: "#catalogo" },
-    { label: "Exterior", href: "#catalogo" },
-    { label: "Decoración", href: "#catalogo" },
+    { label: "Catálogo Completo", href: "/catalogo" },
+    { label: "Sillas", href: "/catalogo?category=sillas" },
+    { label: "Cabeceras", href: "/catalogo?category=cabeceras" },
+    { label: "Banquetas", href: "/catalogo?category=banquetas" },
+    { label: "Mesas", href: "/catalogo?category=mesas" },
   ],
   empresa: [
-    { label: "Sobre Nosotros", href: "#nosotros" },
-    { label: "Showroom", href: "#agenda" },
-    { label: "Proyectos", href: "#galeria" },
-    { label: "Blog", href: "#" },
-    { label: "Contacto", href: "#contacto" },
+    { label: "Sobre Nosotros", href: "/#nosotros" },
+    { label: "Showroom", href: "/#agenda" },
+    { label: "Portfolio", href: "/portfolio" },
+    { label: "Contacto", href: "/#contacto" },
   ],
   legal: [
     { label: "Términos y Condiciones", href: "#" },
@@ -45,14 +45,14 @@ export function Footer() {
         <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-12">
           {/* Brand */}
           <div className="lg:col-span-2">
-            <a href="#inicio" className="inline-block mb-6">
+            <Link href="/" className="inline-block mb-6">
               <span
                 className="text-3xl font-semibold tracking-tight"
                 style={{ fontFamily: "var(--font-playfair), serif" }}
               >
                 Home Stock
               </span>
-            </a>
+            </Link>
             <p className="text-white/70 leading-relaxed mb-6 max-w-sm">
               Transformamos espacios en experiencias únicas. Muebles de diseño
               exclusivo para quienes buscan calidad, estilo y personalidad.
@@ -80,12 +80,12 @@ export function Footer() {
             <ul className="space-y-3">
               {footerLinks.productos.map((link) => (
                 <li key={link.label}>
-                  <a
+                  <Link
                     href={link.href}
                     className="text-white/70 hover:text-white transition-colors"
                   >
                     {link.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -97,12 +97,12 @@ export function Footer() {
             <ul className="space-y-3">
               {footerLinks.empresa.map((link) => (
                 <li key={link.label}>
-                  <a
+                  <Link
                     href={link.href}
                     className="text-white/70 hover:text-white transition-colors"
                   >
                     {link.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -132,7 +132,7 @@ export function Footer() {
         <Container className="py-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-white/50 text-sm text-center md:text-left">
-              © {new Date().getFullYear()} Home Stock. Todos los derechos reservados.
+              &copy; {new Date().getFullYear()} Home Stock. Todos los derechos reservados.
               <span className="mx-2">|</span>
               Powered by{" "}
               <a
