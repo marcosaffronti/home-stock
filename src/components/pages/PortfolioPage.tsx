@@ -1,19 +1,33 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Header } from "@/components/sections/Header";
 import { Footer } from "@/components/sections/Footer";
 import { PageHero } from "@/components/ui/PageHero";
 import { Lightbox } from "@/components/ui/Lightbox";
 import { Container } from "@/components/ui/Container";
 import { WhatsAppButton } from "@/components/ui/WhatsAppButton";
-import { allProjects, galleryCategories } from "@/data/gallery";
+import {
+  allProjects as defaultProjects,
+  galleryCategories as defaultGalleryCategories,
+  GalleryProject,
+} from "@/data/gallery";
+import { getStoredValue, STORAGE_KEYS } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 
 export function PortfolioPage() {
   const [activeCategory, setActiveCategory] = useState("Todos");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [allProjects, setAllProjects] = useState(defaultProjects);
+  const [galleryCategories, setGalleryCategories] = useState(defaultGalleryCategories);
+
+  useEffect(() => {
+    const storedProjects = getStoredValue<GalleryProject[] | null>(STORAGE_KEYS.GALLERY, null);
+    if (storedProjects) setAllProjects(storedProjects);
+    const storedCategories = getStoredValue<string[] | null>(STORAGE_KEYS.GALLERY_CATEGORIES, null);
+    if (storedCategories) setGalleryCategories(storedCategories);
+  }, []);
 
   const filteredProjects =
     activeCategory === "Todos"
@@ -65,7 +79,7 @@ export function PortfolioPage() {
         breadcrumbs={[{ label: "Portfolio" }]}
       />
 
-      <section className="py-12 md:py-20 bg-[#111]">
+      <section className="py-20 md:py-32 bg-[var(--foreground)]">
         <Container>
           {/* Category Filters */}
           <div className="flex flex-wrap justify-center gap-2 mb-12">
@@ -77,7 +91,7 @@ export function PortfolioPage() {
                   setLightboxIndex(null);
                 }}
                 className={cn(
-                  "px-5 py-2 text-sm font-medium transition-all duration-300 rounded-full",
+                  "px-5 py-2 text-sm font-medium transition-all duration-300",
                   activeCategory === cat
                     ? "bg-[var(--accent)] text-white"
                     : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
@@ -94,7 +108,7 @@ export function PortfolioPage() {
               <div
                 key={project.id}
                 className={cn(
-                  "relative group overflow-hidden cursor-pointer rounded-lg",
+                  "relative group overflow-hidden cursor-pointer",
                   getSpan(index)
                 )}
                 onClick={() => setLightboxIndex(index)}

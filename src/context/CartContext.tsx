@@ -16,7 +16,7 @@ interface CartState {
 }
 
 type CartAction =
-  | { type: "ADD_ITEM"; payload: { product: Product; fabric?: FabricSelection } }
+  | { type: "ADD_ITEM"; payload: { product: Product; fabric?: FabricSelection; quantity?: number } }
   | { type: "REMOVE_ITEM"; payload: string }
   | { type: "UPDATE_QUANTITY"; payload: { key: string; quantity: number } }
   | { type: "CLEAR_CART" }
@@ -33,7 +33,7 @@ const initialState: CartState = {
 function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
     case "ADD_ITEM": {
-      const { product, fabric } = action.payload;
+      const { product, fabric, quantity = 1 } = action.payload;
       const key = getCartItemKey(product.id, fabric);
       const existingItem = state.items.find(
         (item) => getCartItemKey(item.product.id, item.fabric) === key
@@ -45,7 +45,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
           isOpen: true,
           items: state.items.map((item) =>
             getCartItemKey(item.product.id, item.fabric) === key
-              ? { ...item, quantity: item.quantity + 1 }
+              ? { ...item, quantity: item.quantity + quantity }
               : item
           ),
         };
@@ -54,7 +54,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       return {
         ...state,
         isOpen: true,
-        items: [...state.items, { product, quantity: 1, fabric }],
+        items: [...state.items, { product, quantity, fabric }],
       };
     }
 
@@ -109,7 +109,7 @@ interface CartContextType {
   isOpen: boolean;
   total: number;
   itemCount: number;
-  addItem: (product: Product, fabric?: FabricSelection) => void;
+  addItem: (product: Product, fabric?: FabricSelection, quantity?: number) => void;
   removeItem: (key: string) => void;
   updateQuantity: (key: string, quantity: number) => void;
   clearCart: () => void;
@@ -149,8 +149,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const itemCount = state.items.reduce((sum, item) => sum + item.quantity, 0);
 
-  const addItem = (product: Product, fabric?: FabricSelection) => {
-    dispatch({ type: "ADD_ITEM", payload: { product, fabric } });
+  const addItem = (product: Product, fabric?: FabricSelection, quantity?: number) => {
+    dispatch({ type: "ADD_ITEM", payload: { product, fabric, quantity } });
     trackAddToCart({ name: product.name, price: product.price, id: product.id });
   };
 

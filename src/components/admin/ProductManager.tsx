@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, Fragment } from "react";
 import { allProducts, categories } from "@/data/products";
 import { formatPrice } from "@/lib/formatters";
-import { Product } from "@/types/product";
+import { Product, ProductSpecs } from "@/types/product";
 import { uploadImage } from "@/lib/upload";
 import {
   Search,
@@ -20,7 +20,10 @@ import {
   LayoutList,
   Upload,
   ImagePlus,
+  Tags,
 } from "lucide-react";
+import CategoryManager, { getCategories, CategoryItem } from "./CategoryManager";
+import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "hs-admin-products";
 
@@ -42,6 +45,8 @@ const defaultNewProduct: Omit<Product, "id"> = {
   stock: 0,
 };
 
+type ProductSubTab = "list" | "categories";
+
 export default function ProductManager() {
   const [products, setProducts] = useState<Product[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -53,9 +58,13 @@ export default function ProductManager() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newProduct, setNewProduct] = useState(defaultNewProduct);
   const [uploading, setUploading] = useState(false);
+  const [subTab, setSubTab] = useState<ProductSubTab>("list");
+  const [dynamicCategories, setDynamicCategories] = useState<CategoryItem[]>([]);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const editImageInputRef = useRef<HTMLInputElement>(null);
   const additionalImageInputRef = useRef<HTMLInputElement>(null);
+
+  const refreshCategories = () => setDynamicCategories(getCategories());
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -68,6 +77,7 @@ export default function ProductManager() {
     } else {
       setProducts([...allProducts]);
     }
+    refreshCategories();
   }, []);
 
   const saveProducts = (updated: Product[]) => {
@@ -102,9 +112,13 @@ export default function ProductManager() {
       category: product.category,
       tag: product.tag,
       featured: product.featured,
+      upholstered: product.upholstered,
       stock: product.stock,
       image: product.image,
       images: product.images ? [...product.images] : [],
+      description: product.description || "",
+      specs: product.specs ? { ...product.specs, customFields: product.specs.customFields ? [...product.specs.customFields] : [] } : { customFields: [] },
+      dimensions: product.dimensions ? { ...product.dimensions } : undefined,
     });
   };
 
@@ -217,8 +231,45 @@ export default function ProductManager() {
     setTimeout(() => setSaveMessage(""), 3000);
   };
 
+  // Use dynamic categories everywhere instead of static ones
+  const activeCategories = dynamicCategories.length > 0 ? dynamicCategories : categories;
+
   return (
     <div className="space-y-6">
+      {/* Sub-tab switcher */}
+      <div className="flex gap-1 bg-white border border-[var(--border)] rounded-xl p-1">
+        <button
+          onClick={() => setSubTab("list")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors flex-1 justify-center ${
+            subTab === "list"
+              ? "bg-[var(--primary)] text-white"
+              : "text-[var(--foreground)] hover:bg-[var(--muted)]"
+          }`}
+          style={{ fontFamily: "var(--font-inter), sans-serif" }}
+        >
+          <Package className="w-4 h-4" />
+          Productos
+        </button>
+        <button
+          onClick={() => { setSubTab("categories"); refreshCategories(); }}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors flex-1 justify-center ${
+            subTab === "categories"
+              ? "bg-[var(--primary)] text-white"
+              : "text-[var(--foreground)] hover:bg-[var(--muted)]"
+          }`}
+          style={{ fontFamily: "var(--font-inter), sans-serif" }}
+        >
+          <Tags className="w-4 h-4" />
+          Categorías
+        </button>
+      </div>
+
+      {/* Categories sub-tab */}
+      {subTab === "categories" && <CategoryManager />}
+
+      {/* Products sub-tab */}
+      {subTab === "list" && <>
+
       {/* Info Banner */}
       <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-xl p-4">
         <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
@@ -248,7 +299,7 @@ export default function ProductManager() {
             {products.length}
           </p>
         </div>
-        {categories
+        {activeCategories
           .filter((c) => c.id !== "all")
           .map((cat) => (
             <div
@@ -287,7 +338,7 @@ export default function ProductManager() {
           className="px-4 py-2.5 border border-[var(--border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)] bg-white text-sm"
           style={{ fontFamily: "var(--font-inter), sans-serif" }}
         >
-          {categories.map((cat) => (
+          {activeCategories.map((cat) => (
             <option key={cat.id} value={cat.id}>
               {cat.label} ({categoryCounts[cat.id] || 0})
             </option>
@@ -369,7 +420,7 @@ export default function ProductManager() {
                 className="w-full px-4 py-3 border border-[var(--border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)] text-sm bg-white"
                 style={{ fontFamily: "var(--font-inter), sans-serif" }}
               >
-                {categories
+                {activeCategories
                   .filter((c) => c.id !== "all")
                   .map((cat) => (
                     <option key={cat.id} value={cat.id}>
@@ -565,8 +616,8 @@ export default function ProductManager() {
               </thead>
               <tbody className="divide-y divide-[var(--border)]">
                 {filteredProducts.map((product) => (
+                  <Fragment key={product.id}>
                   <tr
-                    key={product.id}
                     className="hover:bg-[var(--muted)] transition-colors"
                   >
                     {editingId === product.id ? (
@@ -651,7 +702,7 @@ export default function ProductManager() {
                               fontFamily: "var(--font-inter), sans-serif",
                             }}
                           >
-                            {categories
+                            {activeCategories
                               .filter((c) => c.id !== "all")
                               .map((cat) => (
                                 <option key={cat.id} value={cat.id}>
@@ -847,6 +898,103 @@ export default function ProductManager() {
                       </>
                     )}
                   </tr>
+                  {/* Specs editing row - appears below the main row when editing */}
+                  {editingId === product.id && (
+                    <tr className="bg-gray-50">
+                      <td colSpan={7} className="px-4 py-4">
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-semibold text-[var(--foreground)]" style={{ fontFamily: "var(--font-inter), sans-serif" }}>
+                              Descripción y Especificaciones
+                            </h4>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ fontFamily: "var(--font-inter), sans-serif" }}>
+                                Tapizado
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setEditForm({ ...editForm, upholstered: editForm.upholstered === false ? undefined : false })}
+                                className={cn(
+                                  "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
+                                  editForm.upholstered !== false ? "bg-[var(--primary)]" : "bg-gray-300"
+                                )}
+                              >
+                                <span className={cn(
+                                  "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                                  editForm.upholstered !== false ? "translate-x-6" : "translate-x-1"
+                                )} />
+                              </button>
+                            </label>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider" style={{ fontFamily: "var(--font-inter), sans-serif" }}>
+                              Descripción
+                            </label>
+                            <textarea
+                              value={editForm.description || ""}
+                              onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                              rows={2}
+                              className="w-full px-3 py-2 border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] bg-white"
+                              style={{ fontFamily: "var(--font-inter), sans-serif" }}
+                              placeholder="Descripción del producto..."
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider" style={{ fontFamily: "var(--font-inter), sans-serif" }}>Madera</label>
+                              <input type="text" value={editForm.specs?.woodType || ""} onChange={(e) => setEditForm({ ...editForm, specs: { ...editForm.specs, woodType: e.target.value } })} className="w-full px-3 py-2 border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] bg-white" placeholder="Ej: Petiribi macizo" />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider" style={{ fontFamily: "var(--font-inter), sans-serif" }}>Terminación</label>
+                              <input type="text" value={editForm.specs?.finish || ""} onChange={(e) => setEditForm({ ...editForm, specs: { ...editForm.specs, finish: e.target.value } })} className="w-full px-3 py-2 border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] bg-white" placeholder="Ej: Laqueado poliuretánico" />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider" style={{ fontFamily: "var(--font-inter), sans-serif" }}>Tapizado</label>
+                              <input type="text" value={editForm.specs?.upholstery || ""} onChange={(e) => setEditForm({ ...editForm, specs: { ...editForm.specs, upholstery: e.target.value } })} className="w-full px-3 py-2 border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] bg-white" placeholder="Ej: A elección del cliente" />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider" style={{ fontFamily: "var(--font-inter), sans-serif" }}>Alto asiento</label>
+                              <input type="text" value={editForm.specs?.seatHeight || ""} onChange={(e) => setEditForm({ ...editForm, specs: { ...editForm.specs, seatHeight: e.target.value } })} className="w-full px-3 py-2 border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] bg-white" placeholder="Ej: 46 cm" />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider" style={{ fontFamily: "var(--font-inter), sans-serif" }}>Peso</label>
+                              <input type="text" value={editForm.specs?.weight || ""} onChange={(e) => setEditForm({ ...editForm, specs: { ...editForm.specs, weight: e.target.value } })} className="w-full px-3 py-2 border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] bg-white" placeholder="Ej: 4.5 kg" />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider" style={{ fontFamily: "var(--font-inter), sans-serif" }}>
+                              Medidas (ancho x prof. x alto cm)
+                            </label>
+                            <div className="flex gap-2 items-center">
+                              <input type="number" value={editForm.dimensions?.width || ""} onChange={(e) => setEditForm({ ...editForm, dimensions: { width: Number(e.target.value), depth: editForm.dimensions?.depth || 0, height: editForm.dimensions?.height || 0 } })} className="w-24 px-3 py-2 border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] bg-white" placeholder="Ancho" />
+                              <span className="text-gray-400">x</span>
+                              <input type="number" value={editForm.dimensions?.depth || ""} onChange={(e) => setEditForm({ ...editForm, dimensions: { width: editForm.dimensions?.width || 0, depth: Number(e.target.value), height: editForm.dimensions?.height || 0 } })} className="w-24 px-3 py-2 border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] bg-white" placeholder="Prof." />
+                              <span className="text-gray-400">x</span>
+                              <input type="number" value={editForm.dimensions?.height || ""} onChange={(e) => setEditForm({ ...editForm, dimensions: { width: editForm.dimensions?.width || 0, depth: editForm.dimensions?.depth || 0, height: Number(e.target.value) } })} className="w-24 px-3 py-2 border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] bg-white" placeholder="Alto" />
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ fontFamily: "var(--font-inter), sans-serif" }}>Campos personalizados</label>
+                              <button onClick={() => { const specs = editForm.specs || {}; const fields = specs.customFields || []; setEditForm({ ...editForm, specs: { ...specs, customFields: [...fields, { label: "", value: "" }] } }); }} className="text-xs text-[var(--primary)] hover:underline flex items-center gap-1" style={{ fontFamily: "var(--font-inter), sans-serif" }}>
+                                <Plus className="w-3 h-3" /> Agregar campo
+                              </button>
+                            </div>
+                            {(editForm.specs?.customFields || []).map((field, idx) => (
+                              <div key={idx} className="flex gap-2 mb-2">
+                                <input type="text" value={field.label} onChange={(e) => { const fields = [...(editForm.specs?.customFields || [])]; fields[idx] = { ...fields[idx], label: e.target.value }; setEditForm({ ...editForm, specs: { ...editForm.specs, customFields: fields } }); }} className="flex-1 px-3 py-2 border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] bg-white" placeholder="Etiqueta" />
+                                <input type="text" value={field.value} onChange={(e) => { const fields = [...(editForm.specs?.customFields || [])]; fields[idx] = { ...fields[idx], value: e.target.value }; setEditForm({ ...editForm, specs: { ...editForm.specs, customFields: fields } }); }} className="flex-1 px-3 py-2 border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] bg-white" placeholder="Valor" />
+                                <button onClick={() => { const fields = [...(editForm.specs?.customFields || [])]; fields.splice(idx, 1); setEditForm({ ...editForm, specs: { ...editForm.specs, customFields: fields } }); }} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>
@@ -865,6 +1013,8 @@ export default function ProductManager() {
           )}
         </div>
       )}
+
+      </>}
     </div>
   );
 }

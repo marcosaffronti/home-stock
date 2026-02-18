@@ -1,5 +1,14 @@
 import { FabricSelection } from "./fabric";
 
+export interface ProductSpecs {
+  woodType?: string;
+  finish?: string;
+  upholstery?: string;
+  seatHeight?: string;
+  weight?: string;
+  customFields?: { label: string; value: string }[];
+}
+
 export interface Product {
   id: number;
   name: string;
@@ -10,6 +19,7 @@ export interface Product {
   image: string;
   images?: string[];
   description?: string;
+  specs?: ProductSpecs;
   features?: string[];
   dimensions?: {
     width: number;
@@ -21,6 +31,7 @@ export interface Product {
   stock: number;
   tag?: "Nuevo" | "Destacado" | "Oferta" | "Agotado";
   featured?: boolean;
+  upholstered?: boolean; // default true — set false for wood-only / hilo kraft products
   createdAt?: Date;
 }
 

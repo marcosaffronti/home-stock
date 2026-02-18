@@ -12,13 +12,15 @@ import {
   ChevronRight,
   Monitor,
   ExternalLink,
+  Image as ImageIcon,
 } from "lucide-react";
 import ProductManager from "./ProductManager";
 import ContentEditor from "./ContentEditor";
 import InfoEditor from "./InfoEditor";
 import LandingEditor from "./LandingEditor";
+import GalleryManager from "./GalleryManager";
 
-type AdminSection = "overview" | "products" | "content" | "info" | "landing";
+type AdminSection = "overview" | "products" | "content" | "info" | "landing" | "gallery";
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -46,6 +48,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
     },
     { id: "landing" as AdminSection, label: "Landing", icon: Monitor },
     { id: "products" as AdminSection, label: "Productos", icon: Package },
+    { id: "gallery" as AdminSection, label: "Galería", icon: ImageIcon },
     { id: "content" as AdminSection, label: "Contenido", icon: FileText },
     { id: "info" as AdminSection, label: "Información", icon: Settings },
   ];
@@ -462,6 +465,9 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
         {/* Products */}
         {activeSection === "products" && <ProductManager />}
+
+        {/* Gallery */}
+        {activeSection === "gallery" && <GalleryManager />}
 
         {/* Content */}
         {activeSection === "content" && <ContentEditor />}
