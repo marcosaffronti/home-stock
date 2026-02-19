@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Save, Info, RotateCcw } from "lucide-react";
-import { getStoredValue, setStoredValue, saveToServer, STORAGE_KEYS } from "@/lib/storage";
-
-const STORAGE_KEY = "hs-admin-info";
+import { Save, Info, RotateCcw, Loader2 } from "lucide-react";
+import { getStoredValue, setStoredValue, saveToServer, fetchFromServer, STORAGE_KEYS } from "@/lib/storage";
 
 interface BusinessInfo {
   companyName: string;
@@ -35,32 +33,39 @@ const defaultInfo: BusinessInfo = {
 export default function InfoEditor() {
   const [info, setInfo] = useState<BusinessInfo>(defaultInfo);
   const [saveMessage, setSaveMessage] = useState("");
+  const [saving, setSaving] = useState(false);
   const [metaPixelId, setMetaPixelId] = useState("");
   const [ga4Id, setGa4Id] = useState("");
   const [crmWebhookUrl, setCrmWebhookUrl] = useState("");
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        setInfo(JSON.parse(stored));
-      } catch {
-        setInfo({ ...defaultInfo });
-      }
-    }
-    setMetaPixelId(getStoredValue<string>(STORAGE_KEYS.META_PIXEL_ID, ""));
-    setGa4Id(getStoredValue<string>(STORAGE_KEYS.GA4_MEASUREMENT_ID, ""));
-    setCrmWebhookUrl(getStoredValue<string>(STORAGE_KEYS.CRM_WEBHOOK_URL, ""));
+    // Load from server first (source of truth), fallback to localStorage
+    fetchFromServer<BusinessInfo>(STORAGE_KEYS.INFO, defaultInfo).then((serverInfo) => {
+      setInfo(serverInfo);
+      // Keep localStorage in sync
+      localStorage.setItem(STORAGE_KEYS.INFO, JSON.stringify(serverInfo));
+    });
+    fetchFromServer<string>(STORAGE_KEYS.META_PIXEL_ID, "").then(setMetaPixelId);
+    fetchFromServer<string>(STORAGE_KEYS.GA4_MEASUREMENT_ID, "").then(setGa4Id);
+    fetchFromServer<string>(STORAGE_KEYS.CRM_WEBHOOK_URL, "").then(setCrmWebhookUrl);
   }, []);
 
-  const saveInfo = () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(info));
+  const saveInfo = async () => {
+    setSaving(true);
+    // Save all to server (source of truth)
+    await Promise.all([
+      saveToServer(STORAGE_KEYS.INFO, info),
+      saveToServer(STORAGE_KEYS.META_PIXEL_ID, metaPixelId),
+      saveToServer(STORAGE_KEYS.GA4_MEASUREMENT_ID, ga4Id),
+      saveToServer(STORAGE_KEYS.CRM_WEBHOOK_URL, crmWebhookUrl),
+      saveToServer(STORAGE_KEYS.WHATSAPP_NUMBER, info.phone),
+    ]);
+    // Also persist in localStorage for instant reads
+    localStorage.setItem(STORAGE_KEYS.INFO, JSON.stringify(info));
     setStoredValue(STORAGE_KEYS.META_PIXEL_ID, metaPixelId);
-    saveToServer(STORAGE_KEYS.META_PIXEL_ID, metaPixelId);
     setStoredValue(STORAGE_KEYS.GA4_MEASUREMENT_ID, ga4Id);
-    saveToServer(STORAGE_KEYS.GA4_MEASUREMENT_ID, ga4Id);
     setStoredValue(STORAGE_KEYS.CRM_WEBHOOK_URL, crmWebhookUrl);
-    saveToServer(STORAGE_KEYS.CRM_WEBHOOK_URL, crmWebhookUrl);
+    setSaving(false);
     setSaveMessage("Información guardada correctamente");
     setTimeout(() => setSaveMessage(""), 3000);
   };
@@ -72,7 +77,7 @@ export default function InfoEditor() {
       )
     ) {
       setInfo({ ...defaultInfo });
-      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(STORAGE_KEYS.INFO);
       setSaveMessage("Información restaurada a los valores originales");
       setTimeout(() => setSaveMessage(""), 3000);
     }
@@ -382,10 +387,12 @@ export default function InfoEditor() {
         </button>
         <button
           onClick={saveInfo}
-          className="flex items-center justify-center gap-2 px-6 py-2.5 text-sm text-white bg-[var(--primary)] rounded-xl hover:bg-[var(--primary-dark)] transition-colors"
+          disabled={saving}
+          className="flex items-center justify-center gap-2 px-6 py-2.5 text-sm text-white bg-[var(--primary)] rounded-xl hover:bg-[var(--primary-dark)] transition-colors disabled:opacity-60"
           style={{ fontFamily: "var(--font-inter), sans-serif" }}
         >
-          <Save className="w-4 h-4" /> Guardar cambios
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          {saving ? "Guardando..." : "Guardar cambios"}
         </button>
       </div>
     </div>

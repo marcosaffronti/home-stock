@@ -1,4 +1,4 @@
-// localStorage keys
+// localStorage / server config keys
 export const STORAGE_KEYS = {
   PRODUCTS: "hs-admin-products",
   CONTENT: "hs-admin-content",
@@ -10,6 +10,7 @@ export const STORAGE_KEYS = {
   META_PIXEL_ID: "hs-meta-pixel-id",
   GA4_MEASUREMENT_ID: "hs-ga4-measurement-id",
   CRM_WEBHOOK_URL: "hs-crm-webhook-url",
+  WHATSAPP_NUMBER: "hs-whatsapp-number",
 } as const;
 
 export function getStoredValue<T>(key: string, fallback: T): T {

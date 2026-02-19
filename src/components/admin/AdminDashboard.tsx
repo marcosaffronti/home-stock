@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+"use client";
+
+import { useState, useEffect } from "react";
 import { allProducts, categories } from "@/data/products";
 import {
   Package,
@@ -12,14 +14,16 @@ import {
   Monitor,
   ExternalLink,
   Image as ImageIcon,
+  Inbox,
 } from "lucide-react";
 import ProductManager from "./ProductManager";
 import ContentEditor from "./ContentEditor";
 import InfoEditor from "./InfoEditor";
 import LandingEditor from "./LandingEditor";
 import GalleryManager from "./GalleryManager";
+import LeadsViewer from "./LeadsViewer";
 
-type AdminSection = "overview" | "products" | "content" | "info" | "landing" | "gallery";
+type AdminSection = "overview" | "products" | "content" | "info" | "landing" | "gallery" | "leads";
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -28,6 +32,17 @@ interface AdminDashboardProps {
 export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [activeSection, setActiveSection] = useState<AdminSection>("overview");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [unreadLeads, setUnreadLeads] = useState(0);
+
+  useEffect(() => {
+    fetch("/api/leads")
+      .then((r) => r.json())
+      .then((data) => {
+        const count = (data.leads || []).filter((l: { read: boolean }) => !l.read).length;
+        setUnreadLeads(count);
+      })
+      .catch(() => {});
+  }, []);
 
   const productCount = allProducts.length;
   const categoryCount = categories.filter((c) => c.id !== "all").length;
@@ -40,16 +55,13 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
   };
 
   const navItems = [
-    {
-      id: "overview" as AdminSection,
-      label: "Resumen",
-      icon: LayoutDashboard,
-    },
-    { id: "landing" as AdminSection, label: "Landing", icon: Monitor },
-    { id: "products" as AdminSection, label: "Productos", icon: Package },
-    { id: "gallery" as AdminSection, label: "Galería", icon: ImageIcon },
-    { id: "content" as AdminSection, label: "Contenido", icon: FileText },
-    { id: "info" as AdminSection, label: "Información", icon: Settings },
+    { id: "overview" as AdminSection, label: "Resumen", icon: LayoutDashboard, badge: 0 },
+    { id: "leads" as AdminSection, label: "Consultas", icon: Inbox, badge: unreadLeads },
+    { id: "landing" as AdminSection, label: "Landing", icon: Monitor, badge: 0 },
+    { id: "products" as AdminSection, label: "Productos", icon: Package, badge: 0 },
+    { id: "gallery" as AdminSection, label: "Galería", icon: ImageIcon, badge: 0 },
+    { id: "content" as AdminSection, label: "Contenido", icon: FileText, badge: 0 },
+    { id: "info" as AdminSection, label: "Información", icon: Settings, badge: 0 },
   ];
 
   return (
@@ -102,7 +114,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   <button
                     key={item.id}
                     onClick={() => setActiveSection(item.id)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    className={`relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                       activeSection === item.id
                         ? "bg-[var(--primary)] text-white"
                         : "text-[var(--foreground)] hover:bg-[var(--muted)]"
@@ -111,6 +123,11 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   >
                     <Icon className="w-4 h-4" />
                     {item.label}
+                    {item.badge > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                        {item.badge > 9 ? "9+" : item.badge}
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -182,7 +199,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       setActiveSection(item.id);
                       setIsMobileMenuOpen(false);
                     }}
-                    className={`flex items-center gap-3 w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    className={`relative flex items-center gap-3 w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                       activeSection === item.id
                         ? "bg-[var(--primary)] text-white"
                         : "text-[var(--foreground)] hover:bg-[var(--muted)]"
@@ -191,6 +208,11 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   >
                     <Icon className="w-4 h-4" />
                     {item.label}
+                    {item.badge > 0 && (
+                      <span className="ml-auto w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                        {item.badge > 9 ? "9+" : item.badge}
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -406,6 +428,37 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-[var(--primary)] transition-colors" />
                 </div>
               </button>
+
+              <button
+                onClick={() => setActiveSection("leads")}
+                className="bg-white border border-[var(--border)] rounded-xl p-6 text-left hover:border-[var(--primary)] hover:shadow-sm transition-all group relative"
+              >
+                {unreadLeads > 0 && (
+                  <span className="absolute top-4 right-4 w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                    {unreadLeads > 9 ? "9+" : unreadLeads}
+                  </span>
+                )}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4">
+                      <Inbox className="w-6 h-6 text-green-600" />
+                    </div>
+                    <h3
+                      className="text-lg font-semibold text-[var(--foreground)] mb-1"
+                      style={{ fontFamily: "var(--font-playfair), serif" }}
+                    >
+                      Consultas
+                    </h3>
+                    <p
+                      className="text-sm text-gray-500"
+                      style={{ fontFamily: "var(--font-inter), sans-serif" }}
+                    >
+                      Revisá los mensajes, turnos y consultas recibidas.
+                    </p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-[var(--primary)] transition-colors" />
+                </div>
+              </button>
             </div>
 
             {/* Category Breakdown */}
@@ -457,6 +510,9 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
             </div>
           </div>
         )}
+
+        {/* Leads / Consultas */}
+        {activeSection === "leads" && <LeadsViewer />}
 
         {/* Landing */}
         {activeSection === "landing" && <LandingEditor />}
