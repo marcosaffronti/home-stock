@@ -4,12 +4,12 @@ import { useState, useEffect } from "react";
 import { Container } from "@/components/ui/Container";
 import { Truck, Shield, Palette, Users, Award, Wrench } from "lucide-react";
 import { fetchFromServer, STORAGE_KEYS } from "@/lib/storage";
-import { LandingConfig, defaultLandingConfig, BenefitItem } from "@/types/landing";
+import { LandingConfig, defaultLandingConfig, BenefitItem, SectionLayout } from "@/types/landing";
 import type { LucideIcon } from "lucide-react";
 
 const benefitIcons: LucideIcon[] = [Palette, Award, Users, Truck, Shield, Wrench];
 
-export function Benefits() {
+export function Benefits({ layout }: { layout?: SectionLayout }) {
   const [config, setConfig] = useState(defaultLandingConfig.benefits);
 
   useEffect(() => {
@@ -18,7 +18,7 @@ export function Benefits() {
   }, []);
 
   return (
-    <section id="nosotros" className="py-12 md:py-16 bg-white">
+    <section id="nosotros" className="py-12 md:py-16 bg-white" style={layout?.paddingY ? { paddingTop: layout.paddingY, paddingBottom: layout.paddingY } : undefined}>
       <Container>
         {/* Compact header + stats in a row */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">

@@ -17,6 +17,109 @@ export interface TestimonialItem {
   rating: number;
 }
 
+// ── Layout & Theme Types ──
+
+export type SectionId = "hero" | "catalog" | "styleQuiz" | "gallery" | "appointment" | "testimonials" | "benefits" | "contact";
+
+export const SECTION_LABELS: Record<SectionId, string> = {
+  hero: "Hero",
+  catalog: "Catálogo",
+  styleQuiz: "Quiz de Estilo",
+  gallery: "Galería",
+  appointment: "Agenda",
+  testimonials: "Testimonios",
+  benefits: "Nosotros",
+  contact: "Contacto",
+};
+
+export type TextAlign = "left" | "center" | "right";
+
+export interface SectionLayout {
+  textAlign: TextAlign;
+  paddingY: number; // pixels (0 = use section default)
+}
+
+export interface ThemeConfig {
+  primary: string;
+  primaryDark: string;
+  accent: string;
+  secondary: string;
+  muted: string;
+  border: string;
+  foreground: string;
+  background: string;
+  headingFont: string;
+  bodyFont: string;
+}
+
+export const FONT_OPTIONS = {
+  heading: [
+    "Playfair Display",
+    "Cormorant Garamond",
+    "Lora",
+    "Merriweather",
+    "Libre Baskerville",
+    "DM Serif Display",
+    "Crimson Text",
+    "Prata",
+  ],
+  body: [
+    "Inter",
+    "Lato",
+    "Open Sans",
+    "Roboto",
+    "Source Sans 3",
+    "Nunito",
+    "Work Sans",
+    "DM Sans",
+  ],
+};
+
+export const DEFAULT_SECTION_ORDER: SectionId[] = [
+  "hero", "catalog", "styleQuiz", "gallery", "appointment", "testimonials", "benefits", "contact",
+];
+
+export const DEFAULT_SECTION_VISIBILITY: Record<SectionId, boolean> = {
+  hero: true,
+  catalog: true,
+  styleQuiz: true,
+  gallery: true,
+  appointment: true,
+  testimonials: true,
+  benefits: true,
+  contact: true,
+};
+
+export const DEFAULT_SECTION_LAYOUT: Record<SectionId, SectionLayout> = {
+  hero: { textAlign: "center", paddingY: 0 },
+  catalog: { textAlign: "center", paddingY: 0 },
+  styleQuiz: { textAlign: "center", paddingY: 0 },
+  gallery: { textAlign: "left", paddingY: 0 },
+  appointment: { textAlign: "center", paddingY: 0 },
+  testimonials: { textAlign: "left", paddingY: 0 },
+  benefits: { textAlign: "left", paddingY: 0 },
+  contact: { textAlign: "left", paddingY: 0 },
+};
+
+export const DEFAULT_THEME: ThemeConfig = {
+  primary: "#8B7355",
+  primaryDark: "#6B5744",
+  accent: "#C9A962",
+  secondary: "#D4C4B0",
+  muted: "#F5F1ED",
+  border: "#E5DDD3",
+  foreground: "#1A1A1A",
+  background: "#FAFAFA",
+  headingFont: "Playfair Display",
+  bodyFont: "Inter",
+};
+
+export interface ContactInfoItem {
+  icon: "mapPin" | "phone" | "mail" | "clock";
+  title: string;
+  content: string;
+}
+
 export interface LandingConfig {
   hero: {
     backgroundImage: string;
@@ -51,7 +154,29 @@ export interface LandingConfig {
     description: string;
     items: TestimonialItem[];
   };
+  contact: {
+    sectionLabel: string;
+    title: string;
+    description: string;
+    whatsappText: string;
+    items: ContactInfoItem[];
+  };
+  appointment: {
+    sectionLabel: string;
+    title: string;
+    description: string;
+    timeSlots: string[];
+  };
+  styleQuiz: {
+    title: string;
+    subtitle: string;
+    buttonText: string;
+  };
   featuredProductIds: number[];
+  sectionOrder: SectionId[];
+  sectionVisibility: Record<SectionId, boolean>;
+  sectionLayout: Record<SectionId, SectionLayout>;
+  theme: ThemeConfig;
 }
 
 export const defaultLandingConfig: LandingConfig = {
@@ -165,5 +290,34 @@ export const defaultLandingConfig: LandingConfig = {
       },
     ],
   },
+  contact: {
+    sectionLabel: "Contactanos",
+    title: "Estamos para ayudarte",
+    description:
+      "¿Tenés alguna consulta o querés más información sobre nuestros productos? Completá el formulario y nos pondremos en contacto a la brevedad.",
+    whatsappText: "Hola! Me interesa conocer más sobre sus muebles",
+    items: [
+      { icon: "mapPin", title: "Showroom", content: "Av. Pres. Juan Domingo Perón 757, Villa de Mayo, Prov. de Buenos Aires" },
+      { icon: "phone", title: "WhatsApp", content: "+54 11 7164-3900" },
+      { icon: "mail", title: "Email", content: "somoshomestock@gmail.com" },
+      { icon: "clock", title: "Horarios", content: "Lun a Vie: 9:00 - 16:00 | Sáb: 9:00 - 13:00" },
+    ],
+  },
+  appointment: {
+    sectionLabel: "Visitá Nuestro Showroom",
+    title: "Agendá tu visita",
+    description:
+      "Reservá una cita para conocer nuestra colección en persona y recibir asesoramiento personalizado de nuestro equipo.",
+    timeSlots: ["10:00", "11:00", "12:00", "14:00", "15:00", "16:00", "17:00", "18:00"],
+  },
+  styleQuiz: {
+    title: "¿No sabés por dónde empezar?",
+    subtitle: "Respondé 4 preguntas y te recomendamos los muebles ideales para tu estilo y espacio.",
+    buttonText: "Descubrí tu estilo",
+  },
   featuredProductIds: [],
+  sectionOrder: DEFAULT_SECTION_ORDER,
+  sectionVisibility: DEFAULT_SECTION_VISIBILITY,
+  sectionLayout: DEFAULT_SECTION_LAYOUT,
+  theme: DEFAULT_THEME,
 };

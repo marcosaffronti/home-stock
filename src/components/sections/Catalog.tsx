@@ -7,10 +7,10 @@ import { ArrowRight } from "lucide-react";
 import { Product } from "@/types/product";
 import { featuredProducts, allProducts } from "@/data/products";
 import { fetchFromServer, STORAGE_KEYS } from "@/lib/storage";
-import { LandingConfig, defaultLandingConfig } from "@/types/landing";
+import { LandingConfig, defaultLandingConfig, SectionLayout } from "@/types/landing";
 import { FeaturedProductCard } from "./FeaturedProductCard";
 
-export function Catalog() {
+export function Catalog({ layout }: { layout?: SectionLayout }) {
   const [catalogConfig, setCatalogConfig] = useState(defaultLandingConfig.catalog);
   const [featuredIds, setFeaturedIds] = useState<number[]>([]);
   const [storedProducts, setStoredProducts] = useState<Product[] | null>(null);
@@ -40,10 +40,10 @@ export function Catalog() {
   }, [featuredIds, storedProducts]);
 
   return (
-    <section id="catalogo" className="py-14 md:py-24 bg-white">
+    <section id="catalogo" className="py-14 md:py-24 bg-white" style={layout?.paddingY ? { paddingTop: layout.paddingY, paddingBottom: layout.paddingY } : undefined}>
       <Container>
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className={`mb-12 ${layout?.textAlign === "left" ? "text-left" : layout?.textAlign === "right" ? "text-right" : "text-center"}`}>
           <p className="text-[var(--accent)] text-sm font-medium tracking-[0.3em] uppercase mb-4">
             {catalogConfig.sectionLabel}
           </p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Container } from "@/components/ui/Container";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -9,31 +9,24 @@ import { cn } from "@/lib/utils";
 import { WHATSAPP_NUMBER } from "@/lib/constants";
 import { sendToCrm } from "@/lib/crm";
 import { trackLead } from "@/lib/tracking";
+import { LandingConfig, defaultLandingConfig, ContactInfoItem, SectionLayout } from "@/types/landing";
+import { fetchFromServer, STORAGE_KEYS } from "@/lib/storage";
 
-const contactInfo = [
-  {
-    icon: MapPin,
-    title: "Showroom",
-    content: "Av. Pres. Juan Domingo Perón 757, Villa de Mayo, Prov. de Buenos Aires",
-  },
-  {
-    icon: Phone,
-    title: "WhatsApp",
-    content: "+54 11 7164-3900",
-  },
-  {
-    icon: Mail,
-    title: "Email",
-    content: "somoshomestock@gmail.com",
-  },
-  {
-    icon: Clock,
-    title: "Horarios",
-    content: "Lun a Vie: 9:00 - 16:00 | Sáb: 9:00 - 13:00",
-  },
-];
+const ICON_MAP = {
+  mapPin: MapPin,
+  phone: Phone,
+  mail: Mail,
+  clock: Clock,
+};
 
-export function ContactForm() {
+export function ContactForm({ layout }: { layout?: SectionLayout }) {
+  const [config, setConfig] = useState(defaultLandingConfig.contact);
+
+  useEffect(() => {
+    fetchFromServer<LandingConfig>(STORAGE_KEYS.LANDING, defaultLandingConfig)
+      .then((landing) => { if (landing.contact) setConfig({ ...defaultLandingConfig.contact, ...landing.contact }); });
+  }, []);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -88,45 +81,46 @@ export function ContactForm() {
   };
 
   return (
-    <section id="contacto" className="py-14 md:py-20 bg-[var(--muted)]">
+    <section id="contacto" className="py-14 md:py-20 bg-[var(--muted)]" style={layout?.paddingY ? { paddingTop: layout.paddingY, paddingBottom: layout.paddingY } : undefined}>
       <Container>
         <div className="grid lg:grid-cols-2 gap-16">
           {/* Left - Contact Info */}
           <div>
             <p className="text-[var(--accent)] text-sm font-medium tracking-[0.3em] uppercase mb-4">
-              Contactanos
+              {config.sectionLabel}
             </p>
             <h2
               className="text-3xl md:text-4xl lg:text-5xl font-semibold text-[var(--foreground)] mb-6"
               style={{ fontFamily: "var(--font-playfair), serif" }}
             >
-              Estamos para ayudarte
+              {config.title}
             </h2>
             <p className="text-gray-600 text-lg leading-relaxed mb-8">
-              ¿Tenés alguna consulta o querés más información sobre nuestros
-              productos? Completá el formulario y nos pondremos en contacto a la
-              brevedad.
+              {config.description}
             </p>
 
             <div className="space-y-6 mb-8">
-              {contactInfo.map((item, index) => (
-                <div key={index} className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-[var(--primary)] flex items-center justify-center flex-shrink-0">
-                    <item.icon size={20} className="text-white" />
+              {config.items.map((item, index) => {
+                const Icon = ICON_MAP[item.icon] || MapPin;
+                return (
+                  <div key={index} className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-[var(--primary)] flex items-center justify-center flex-shrink-0">
+                      <Icon size={20} className="text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-[var(--foreground)]">
+                        {item.title}
+                      </h3>
+                      <p className="text-gray-600">{item.content}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-[var(--foreground)]">
-                      {item.title}
-                    </h3>
-                    <p className="text-gray-600">{item.content}</p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* WhatsApp Button */}
             <a
-              href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Hola! Me interesa conocer más sobre sus muebles")}`}
+              href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(config.whatsappText)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-3 bg-[#25D366] text-white px-6 py-3 font-medium hover:bg-[#20BD5A] transition-colors"

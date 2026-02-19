@@ -4,6 +4,7 @@ import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
 import { CompareProvider } from "@/context/CompareContext";
 import { CartSidebar } from "@/components/ui/CartSidebar";
+import { ThemeInjector } from "@/components/landing/ThemeInjector";
 import { MetaPixel } from "@/components/tracking/MetaPixel";
 import { GoogleAnalytics } from "@/components/tracking/GoogleAnalytics";
 
@@ -62,6 +63,7 @@ export default function RootLayout({
       <body
         className={`${playfair.variable} ${inter.variable} antialiased`}
       >
+        <ThemeInjector />
         <CartProvider>
           <CompareProvider>
             {children}

@@ -5,9 +5,9 @@ import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { ArrowRight, Play } from "lucide-react";
 import { fetchFromServer, STORAGE_KEYS } from "@/lib/storage";
-import { LandingConfig, defaultLandingConfig } from "@/types/landing";
+import { LandingConfig, defaultLandingConfig, SectionLayout } from "@/types/landing";
 
-export function Hero() {
+export function Hero({ layout }: { layout?: SectionLayout }) {
   const [hero, setHero] = useState(defaultLandingConfig.hero);
   const [loaded, setLoaded] = useState(false);
   const [parallaxY, setParallaxY] = useState(0);
@@ -52,7 +52,7 @@ export function Hero() {
 
       {/* Content — staggered fade-in */}
       <Container className="relative z-10">
-        <div className="max-w-2xl">
+        <div className={`max-w-2xl ${layout?.textAlign === "center" ? "mx-auto text-center" : layout?.textAlign === "right" ? "ml-auto text-right" : ""}`}>
           <p
             className="text-[var(--accent)] text-sm font-medium tracking-[0.3em] uppercase mb-4"
             style={{
@@ -86,7 +86,7 @@ export function Hero() {
           </p>
 
           <div
-            className="flex flex-col sm:flex-row gap-4"
+            className={`flex flex-col sm:flex-row gap-4 ${layout?.textAlign === "center" ? "justify-center" : layout?.textAlign === "right" ? "justify-end" : ""}`}
             style={{
               opacity: loaded ? 1 : 0,
               transform: loaded ? "none" : "translateY(20px)",

@@ -9,17 +9,8 @@ import { Calendar, Clock, CheckCircle, ChevronLeft, ChevronRight, MessageCircle 
 import { sendToCrm } from "@/lib/crm";
 import { trackLead } from "@/lib/tracking";
 import { WHATSAPP_NUMBER } from "@/lib/constants";
-
-const timeSlots = [
-  "10:00",
-  "11:00",
-  "12:00",
-  "14:00",
-  "15:00",
-  "16:00",
-  "17:00",
-  "18:00",
-];
+import { LandingConfig, defaultLandingConfig, SectionLayout } from "@/types/landing";
+import { fetchFromServer, STORAGE_KEYS } from "@/lib/storage";
 
 // Generate next 14 available days (excluding Sundays)
 const generateAvailableDates = () => {
@@ -208,7 +199,14 @@ function MiniCalendar({
   );
 }
 
-export function AppointmentBooking() {
+export function AppointmentBooking({ layout }: { layout?: SectionLayout }) {
+  const [config, setConfig] = useState(defaultLandingConfig.appointment);
+
+  useEffect(() => {
+    fetchFromServer<LandingConfig>(STORAGE_KEYS.LANDING, defaultLandingConfig)
+      .then((landing) => { if (landing.appointment) setConfig({ ...defaultLandingConfig.appointment, ...landing.appointment }); });
+  }, []);
+
   const sectionRef = useRef<HTMLElement>(null);
   const [availableDates] = useState(generateAvailableDates());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -337,23 +335,22 @@ export function AppointmentBooking() {
   }
 
   return (
-    <section id="agenda" className="py-14 md:py-24 bg-white">
+    <section id="agenda" className="py-14 md:py-24 bg-white" style={layout?.paddingY ? { paddingTop: layout.paddingY, paddingBottom: layout.paddingY } : undefined}>
       <Container>
         <div className="max-w-4xl mx-auto">
           {/* Header */}
-          <div className="text-center mb-12">
+          <div className={`mb-12 ${layout?.textAlign === "left" ? "text-left" : layout?.textAlign === "right" ? "text-right" : "text-center"}`}>
             <p className="text-[var(--accent)] text-sm font-medium tracking-[0.3em] uppercase mb-4">
-              Visitá Nuestro Showroom
+              {config.sectionLabel}
             </p>
             <h2
               className="text-3xl md:text-4xl lg:text-5xl font-semibold text-[var(--foreground)] mb-4"
               style={{ fontFamily: "var(--font-playfair), serif" }}
             >
-              Agendá tu visita
+              {config.title}
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              Reservá una cita para conocer nuestra colección en persona y
-              recibir asesoramiento personalizado de nuestro equipo.
+              {config.description}
             </p>
           </div>
 
@@ -429,7 +426,7 @@ export function AppointmentBooking() {
                 </h3>
               </div>
               <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
-                {timeSlots.map((time) => (
+                {config.timeSlots.map((time) => (
                   <button
                     key={time}
                     type="button"

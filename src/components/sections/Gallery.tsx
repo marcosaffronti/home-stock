@@ -8,9 +8,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { featuredProjects as defaultFeaturedProjects, GalleryProject } from "@/data/gallery";
 import { fetchFromServer, STORAGE_KEYS } from "@/lib/storage";
-import { LandingConfig, defaultLandingConfig } from "@/types/landing";
+import { LandingConfig, defaultLandingConfig, SectionLayout } from "@/types/landing";
 
-export function Gallery() {
+export function Gallery({ layout }: { layout?: SectionLayout }) {
   const [galleryConfig, setGalleryConfig] = useState(defaultLandingConfig.gallery);
   const [featuredProjects, setFeaturedProjects] = useState(defaultFeaturedProjects);
 
@@ -29,7 +29,7 @@ export function Gallery() {
   const displayProjects = featuredProjects.slice(0, 4);
 
   return (
-    <section id="galeria" className="py-12 md:py-16 bg-[var(--muted)]">
+    <section id="galeria" className="py-12 md:py-16 bg-[var(--muted)]" style={layout?.paddingY ? { paddingTop: layout.paddingY, paddingBottom: layout.paddingY } : undefined}>
       <Container>
         {/* Header — inline with CTA */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">

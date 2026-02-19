@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Container } from "@/components/ui/Container";
 import { Star } from "lucide-react";
 import { fetchFromServer, STORAGE_KEYS } from "@/lib/storage";
-import { LandingConfig, defaultLandingConfig, TestimonialItem } from "@/types/landing";
+import { LandingConfig, defaultLandingConfig, TestimonialItem, SectionLayout } from "@/types/landing";
 
 function TestimonialCard({ item }: { item: TestimonialItem }) {
   return (
@@ -33,7 +33,7 @@ function TestimonialCard({ item }: { item: TestimonialItem }) {
   );
 }
 
-export function Testimonials() {
+export function Testimonials({ layout }: { layout?: SectionLayout }) {
   const [config, setConfig] = useState(defaultLandingConfig.testimonials);
 
   useEffect(() => {
@@ -48,7 +48,7 @@ export function Testimonials() {
   const marqueeItems = [...items, ...items];
 
   return (
-    <section className="py-12 md:py-16 bg-[var(--muted)] overflow-hidden">
+    <section className="py-12 md:py-16 bg-[var(--muted)] overflow-hidden" style={layout?.paddingY ? { paddingTop: layout.paddingY, paddingBottom: layout.paddingY } : undefined}>
       <Container className="mb-8">
         <div className="flex items-center justify-between">
           <div>
