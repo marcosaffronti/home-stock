@@ -17,6 +17,8 @@ export interface Lead {
   timestamp: string;
   source: string;
   read: boolean;
+  notes?: string;           // internal admin notes
+  repliedAt?: string;       // ISO timestamp when first replied
 }
 
 function readLeads(): Lead[] {
@@ -81,17 +83,24 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true, id: lead.id });
 }
 
-// PATCH /api/leads — mark as read / bulk update
+// PATCH /api/leads — mark as read, update notes, mark replied
 export async function PATCH(req: NextRequest) {
   const body = await req.json();
-  const { id, read } = body as { id: string; read: boolean };
+  const { id, read, notes, repliedAt } = body as {
+    id: string;
+    read?: boolean;
+    notes?: string;
+    repliedAt?: string;
+  };
 
   const leads = readLeads();
   const idx = leads.findIndex((l) => l.id === id);
   if (idx === -1) {
     return NextResponse.json({ error: "Lead not found" }, { status: 404 });
   }
-  leads[idx].read = read;
+  if (read !== undefined)      leads[idx].read = read;
+  if (notes !== undefined)     leads[idx].notes = notes;
+  if (repliedAt !== undefined) leads[idx].repliedAt = repliedAt;
   writeLeads(leads);
   return NextResponse.json({ ok: true });
 }

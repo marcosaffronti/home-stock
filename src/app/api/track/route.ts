@@ -68,10 +68,9 @@ export async function POST(req: NextRequest) {
   switch (event) {
     case "page_view": {
       day.pv++;
-      // Unique session dedup
       if (sessionId) {
         if (!sessions[date]) sessions[date] = [];
-        const hash = sessionId.slice(0, 16); // truncate for storage
+        const hash = sessionId.slice(0, 16);
         if (!sessions[date].includes(hash)) {
           sessions[date].push(hash);
           day.sv++;
@@ -86,15 +85,9 @@ export async function POST(req: NextRequest) {
       }
       break;
     }
-    case "cart_add":
-      day.ca++;
-      break;
-    case "whatsapp_click":
-      day.wa++;
-      break;
-    case "checkout_start":
-      day.cs++;
-      break;
+    case "cart_add":       day.ca++; break;
+    case "whatsapp_click": day.wa++; break;
+    case "checkout_start": day.cs++; break;
   }
 
   pruneOldDays(analytics);
@@ -105,14 +98,34 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true });
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const analytics = readJson<Analytics>(ANALYTICS_FILE, {});
 
-  // Build last 30 days array (filling gaps with zeros)
+  // Support ?days=1|7|15|30 and ?from=YYYY-MM-DD&to=YYYY-MM-DD
+  const url = req.nextUrl;
+  const fromParam = url.searchParams.get("from");
+  const toParam   = url.searchParams.get("to");
+  const daysParam = Number(url.searchParams.get("days") || "30");
+
+  // Build date range
+  let dateFrom: Date;
+  let dateTo: Date = new Date();
+
+  if (fromParam && toParam) {
+    dateFrom = new Date(fromParam + "T00:00:00");
+    dateTo   = new Date(toParam   + "T23:59:59");
+  } else {
+    dateFrom = new Date();
+    dateFrom.setDate(dateFrom.getDate() - (daysParam - 1));
+  }
+
+  const totalDays = Math.round((dateTo.getTime() - dateFrom.getTime()) / 86400000) + 1;
+
+  // Build days array
   const days: Array<{ date: string } & DayData> = [];
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
+  for (let i = 0; i < totalDays; i++) {
+    const d = new Date(dateFrom);
+    d.setDate(d.getDate() + i);
     const dateStr = d.toISOString().slice(0, 10);
     days.push({ date: dateStr, ...(analytics[dateStr] || emptyDay()) });
   }
@@ -129,21 +142,23 @@ export async function GET() {
     { pv: 0, sv: 0, ca: 0, wa: 0, cs: 0 }
   );
 
-  // Last 7 days
-  const last7 = days.slice(-7);
-  const prev7 = days.slice(-14, -7);
+  // Last half vs first half (for trend comparison)
+  const half = Math.floor(days.length / 2);
+  const recentHalf = days.slice(half);
+  const prevHalf   = days.slice(0, half);
+
   const week = {
-    sv: last7.reduce((a, d) => a + d.sv, 0),
-    ca: last7.reduce((a, d) => a + d.ca, 0),
-    wa: last7.reduce((a, d) => a + d.wa, 0),
+    sv: recentHalf.reduce((a, d) => a + d.sv, 0),
+    ca: recentHalf.reduce((a, d) => a + d.ca, 0),
+    wa: recentHalf.reduce((a, d) => a + d.wa, 0),
   };
   const prevWeek = {
-    sv: prev7.reduce((a, d) => a + d.sv, 0),
-    ca: prev7.reduce((a, d) => a + d.ca, 0),
-    wa: prev7.reduce((a, d) => a + d.wa, 0),
+    sv: prevHalf.reduce((a, d) => a + d.sv, 0),
+    ca: prevHalf.reduce((a, d) => a + d.ca, 0),
+    wa: prevHalf.reduce((a, d) => a + d.wa, 0),
   };
 
-  // Top products (merge all days)
+  // Top products (merge all days in range)
   const productMap: Record<string, number> = {};
   for (const d of days) {
     for (const [key, count] of Object.entries(d.pv_products)) {
@@ -158,8 +173,11 @@ export async function GET() {
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
 
+  // Active days (days with at least 1 visitor)
+  const activeDays = days.filter((d) => d.sv > 0).length;
+
   return NextResponse.json(
-    { days, totals, week, prevWeek, topProducts },
+    { days, totals, week, prevWeek, topProducts, activeDays, totalDays },
     { headers: { "Cache-Control": "no-store" } }
   );
 }

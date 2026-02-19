@@ -70,6 +70,8 @@ export default function LandingEditor() {
   const [uploading, setUploading] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewMinimized, setPreviewMinimized] = useState(false);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
   const [previewPos, setPreviewPos] = useState({ x: -1, y: -1 });
   const [previewSize, setPreviewSize] = useState({ w: 480, h: 600 });
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -268,6 +270,21 @@ export default function LandingEditor() {
     setConfig({ ...config, sectionOrder: order });
   };
 
+  // Drag & drop section reorder
+  const dropSection = (toIdx: number) => {
+    if (dragIdx === null || dragIdx === toIdx) {
+      setDragIdx(null);
+      setDragOverIdx(null);
+      return;
+    }
+    const order = [...config.sectionOrder];
+    const [moved] = order.splice(dragIdx, 1);
+    order.splice(toIdx, 0, moved);
+    setConfig({ ...config, sectionOrder: order });
+    setDragIdx(null);
+    setDragOverIdx(null);
+  };
+
   const toggleVisibility = (sectionId: SectionId) => {
     setConfig({
       ...config,
@@ -429,46 +446,126 @@ export default function LandingEditor() {
         {/* ═══════════════ SECTIONS TAB ═══════════════ */}
         {activeSubTab === "sections" && (
           <div className="space-y-6">
-            <div className="bg-white border border-[var(--border)] rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2" style={{ fontFamily: "var(--font-playfair), serif" }}>
-                Orden y visibilidad de secciones
-              </h3>
-              <p className="text-xs text-gray-500 mb-6">Reordená, ocultá secciones y controlá la alineación de cada una.</p>
+            <div className="bg-white border border-[var(--border)] rounded-xl p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-lg font-semibold text-[var(--foreground)]" style={{ fontFamily: "var(--font-playfair), serif" }}>
+                  Secciones
+                </h3>
+                <span className="text-xs text-gray-400 hidden sm:block">
+                  Arrastrá para reordenar
+                </span>
+              </div>
+              <p className="text-xs text-gray-400 mb-5 sm:hidden">
+                Usá ↑↓ para reordenar, o arrastrá desde el icono ≡
+              </p>
 
               <div className="space-y-2">
                 {config.sectionOrder.map((sectionId, idx) => {
                   const isVisible = config.sectionVisibility[sectionId];
                   const sl = config.sectionLayout[sectionId] || DEFAULT_SECTION_LAYOUT[sectionId];
+                  const isDragging  = dragIdx === idx;
+                  const isDragOver  = dragOverIdx === idx;
+
                   return (
-                    <div key={sectionId} className={`border rounded-lg p-4 transition-colors ${isVisible ? "border-[var(--border)] bg-white" : "border-gray-200 bg-gray-50 opacity-60"}`}>
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1 text-gray-300 flex-shrink-0">
+                    <div
+                      key={sectionId}
+                      className={`border rounded-xl transition-all select-none ${
+                        isDragging  ? "opacity-40 scale-[0.98] border-[var(--primary)] bg-white"
+                        : isDragOver ? "border-[var(--primary)] bg-[var(--primary)]/5 scale-[1.01]"
+                        : isVisible  ? "border-[var(--border)] bg-white"
+                        : "border-gray-200 bg-gray-50 opacity-60"
+                      }`}
+                      onDragOver={(e) => { e.preventDefault(); setDragOverIdx(idx); }}
+                      onDrop={() => dropSection(idx)}
+                      onDragEnd={() => { setDragIdx(null); setDragOverIdx(null); }}
+                    >
+                      {/* Main row */}
+                      <div className="flex items-center gap-2 sm:gap-3 px-3 py-3">
+                        {/* Grip (drag handle) */}
+                        <div
+                          draggable
+                          onDragStart={(e) => {
+                            setDragIdx(idx);
+                            e.dataTransfer.effectAllowed = "move";
+                          }}
+                          className="cursor-grab active:cursor-grabbing p-1.5 text-gray-300 hover:text-gray-500 touch-none flex-shrink-0"
+                          title="Arrastrá para mover"
+                        >
                           <GripVertical size={16} />
-                          <span className="text-xs font-mono w-4 text-center">{idx + 1}</span>
                         </div>
-                        <span className="flex-1 font-medium text-sm text-[var(--foreground)]">{SECTION_LABELS[sectionId]}</span>
-                        <div className="flex gap-0.5">
-                          <AlignButton align="left" current={sl.textAlign} onClick={() => updateSectionLayout(sectionId, { textAlign: "left" })} />
-                          <AlignButton align="center" current={sl.textAlign} onClick={() => updateSectionLayout(sectionId, { textAlign: "center" })} />
-                          <AlignButton align="right" current={sl.textAlign} onClick={() => updateSectionLayout(sectionId, { textAlign: "right" })} />
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <label className="text-[10px] text-gray-400 uppercase tracking-wider">Padding</label>
-                          <input type="range" min={0} max={200} step={8} value={sl.paddingY} onChange={(e) => updateSectionLayout(sectionId, { paddingY: Number(e.target.value) })} className="w-20 h-1 accent-[var(--primary)]" />
-                          <span className="text-[10px] font-mono text-gray-400 w-8">{sl.paddingY || "auto"}</span>
-                        </div>
+
+                        {/* Number badge */}
+                        <span className="w-5 h-5 rounded-full bg-[var(--muted)] text-[10px] font-bold text-gray-500 flex items-center justify-center flex-shrink-0">
+                          {idx + 1}
+                        </span>
+
+                        {/* Section name */}
+                        <span className="flex-1 font-medium text-sm text-[var(--foreground)] truncate">
+                          {SECTION_LABELS[sectionId]}
+                        </span>
+
+                        {/* Mobile up/down (always visible) */}
                         <div className="flex gap-0.5 flex-shrink-0">
-                          <button onClick={() => moveSection(sectionId, "up")} disabled={idx === 0} className="p-1.5 text-gray-400 hover:text-[var(--primary)] disabled:opacity-20 transition-colors"><ChevronUp size={16} /></button>
-                          <button onClick={() => moveSection(sectionId, "down")} disabled={idx === config.sectionOrder.length - 1} className="p-1.5 text-gray-400 hover:text-[var(--primary)] disabled:opacity-20 transition-colors"><ChevronDown size={16} /></button>
+                          <button
+                            onClick={() => moveSection(sectionId, "up")}
+                            disabled={idx === 0}
+                            className="p-1.5 text-gray-400 hover:text-[var(--primary)] disabled:opacity-20 transition-colors"
+                          >
+                            <ChevronUp size={15} />
+                          </button>
+                          <button
+                            onClick={() => moveSection(sectionId, "down")}
+                            disabled={idx === config.sectionOrder.length - 1}
+                            className="p-1.5 text-gray-400 hover:text-[var(--primary)] disabled:opacity-20 transition-colors"
+                          >
+                            <ChevronDown size={15} />
+                          </button>
                         </div>
-                        <button onClick={() => toggleVisibility(sectionId)} className={`p-1.5 transition-colors ${isVisible ? "text-green-500 hover:text-red-400" : "text-gray-300 hover:text-green-500"}`} title={isVisible ? "Ocultar" : "Mostrar"}>
+
+                        {/* Visibility toggle */}
+                        <button
+                          onClick={() => toggleVisibility(sectionId)}
+                          className={`p-1.5 rounded-lg transition-colors flex-shrink-0 ${
+                            isVisible ? "text-emerald-500 hover:bg-red-50 hover:text-red-400" : "text-gray-300 hover:bg-emerald-50 hover:text-emerald-500"
+                          }`}
+                          title={isVisible ? "Ocultar sección" : "Mostrar sección"}
+                        >
                           {isVisible ? <Eye size={16} /> : <EyeOff size={16} />}
                         </button>
+                      </div>
+
+                      {/* Sub-row: alignment + padding (collapsible feel — always shown) */}
+                      <div className="flex items-center gap-2 px-3 pb-3 border-t border-[var(--border)]/50 pt-2.5 flex-wrap">
+                        {/* Alignment */}
+                        <div className="flex gap-0.5">
+                          <AlignButton align="left"   current={sl.textAlign} onClick={() => updateSectionLayout(sectionId, { textAlign: "left" })} />
+                          <AlignButton align="center" current={sl.textAlign} onClick={() => updateSectionLayout(sectionId, { textAlign: "center" })} />
+                          <AlignButton align="right"  current={sl.textAlign} onClick={() => updateSectionLayout(sectionId, { textAlign: "right" })} />
+                        </div>
+                        {/* Padding */}
+                        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                          <label className="text-[10px] text-gray-400 uppercase tracking-wider flex-shrink-0">Espaciado</label>
+                          <input
+                            type="range"
+                            min={0} max={200} step={8}
+                            value={sl.paddingY}
+                            onChange={(e) => updateSectionLayout(sectionId, { paddingY: Number(e.target.value) })}
+                            className="flex-1 h-1 accent-[var(--primary)] min-w-0"
+                          />
+                          <span className="text-[10px] font-mono text-gray-400 w-7 flex-shrink-0 text-right">{sl.paddingY || "auto"}</span>
+                        </div>
                       </div>
                     </div>
                   );
                 })}
               </div>
+
+              {/* Drop indicator feedback */}
+              {dragIdx !== null && (
+                <p className="text-xs text-center text-[var(--primary)] mt-3 animate-pulse">
+                  Soltá sobre la sección destino para moverla
+                </p>
+              )}
             </div>
           </div>
         )}

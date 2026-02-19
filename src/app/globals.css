@@ -62,6 +62,23 @@ html {
   display: none;
 }
 
+/* ── 3D Press Effect ─────────────────────────────────────────── */
+button:not([disabled]):active,
+[role="button"]:not([disabled]):active {
+  transform: translateY(1.5px) scale(0.985);
+}
+
+/* Smooth base transitions for all interactive elements */
+button, [role="button"], a {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Minimum touch target size (accessibility + mobile) */
+button, [role="button"] {
+  min-height: 36px;
+}
+
 /* Testimonials marquee */
 @keyframes marquee {
   0% {

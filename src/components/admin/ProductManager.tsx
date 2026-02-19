@@ -299,82 +299,40 @@ export default function ProductManager() {
       {/* Products sub-tab */}
       {subTab === "list" && <>
 
-      {/* Info Banner */}
-      <div className="flex items-start gap-3 bg-green-50 border border-green-200 rounded-xl p-4">
-        <Info className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-        <p
-          className="text-sm text-green-800"
-          style={{ fontFamily: "var(--font-inter), sans-serif" }}
-        >
-          Los cambios se guardan en el servidor y se reflejan en la web para todos los visitantes.
-        </p>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white border border-[var(--border)] rounded-xl p-4">
-          <div className="flex items-center gap-2 text-[var(--primary)] mb-1">
-            <Package className="w-4 h-4" />
-            <span
-              className="text-xs font-medium uppercase tracking-wider"
-              style={{ fontFamily: "var(--font-inter), sans-serif" }}
-            >
-              Total
-            </span>
-          </div>
-          <p className="text-2xl font-semibold text-[var(--foreground)]">
-            {products.length}
-          </p>
+      {/* Compact summary bar */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-1.5 text-xs text-[var(--primary)] font-semibold bg-[var(--muted)] px-3 py-1.5 rounded-full" style={{ fontFamily: "var(--font-inter), sans-serif" }}>
+          <Package className="w-3.5 h-3.5" />
+          {products.length} productos
         </div>
-        {activeCategories
-          .filter((c) => c.id !== "all")
-          .map((cat) => (
-            <div
-              key={cat.id}
-              className="bg-white border border-[var(--border)] rounded-xl p-4"
-            >
-              <span
-                className="text-xs font-medium text-gray-500 uppercase tracking-wider"
-                style={{ fontFamily: "var(--font-inter), sans-serif" }}
-              >
-                {cat.label}
-              </span>
-              <p className="text-2xl font-semibold text-[var(--foreground)]">
-                {categoryCounts[cat.id] || 0}
-              </p>
-            </div>
-          ))}
+        {activeCategories.filter((c) => c.id !== "all").map((cat) => (
+          <span key={cat.id} className="text-xs text-gray-500 bg-white border border-[var(--border)] px-2.5 py-1 rounded-full" style={{ fontFamily: "var(--font-inter), sans-serif" }}>
+            {cat.label} <span className="font-semibold text-[var(--foreground)]">{categoryCounts[cat.id] || 0}</span>
+          </span>
+        ))}
+        <span className="ml-auto text-xs text-green-700 flex items-center gap-1" style={{ fontFamily: "var(--font-inter), sans-serif" }}>
+          <Info className="w-3.5 h-3.5" /> Guardado en servidor
+        </span>
       </div>
 
       {/* Filters & Search */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Buscar productos..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-[var(--border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent bg-white text-sm"
-            style={{ fontFamily: "var(--font-inter), sans-serif" }}
-          />
-        </div>
-        <select
-          value={filterCategory}
-          onChange={(e) => setFilterCategory(e.target.value)}
-          className="px-4 py-2.5 border border-[var(--border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)] bg-white text-sm"
-          style={{ fontFamily: "var(--font-inter), sans-serif" }}
-        >
-          {activeCategories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-              {cat.label} ({categoryCounts[cat.id] || 0})
-            </option>
-          ))}
-        </select>
+      <div className="flex flex-col gap-3">
+        {/* Search + action buttons */}
         <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Buscar productos..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 border border-[var(--border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent bg-white text-sm"
+              style={{ fontFamily: "var(--font-inter), sans-serif" }}
+            />
+          </div>
           <button
             onClick={() => setViewMode(viewMode === "table" ? "grid" : "table")}
-            className="p-2.5 border border-[var(--border)] rounded-xl hover:bg-gray-50 transition-colors"
+            className="p-2.5 border border-[var(--border)] rounded-xl hover:bg-gray-50 transition-colors flex-shrink-0"
             title={viewMode === "table" ? "Vista grilla" : "Vista tabla"}
           >
             {viewMode === "table" ? (
@@ -385,20 +343,42 @@ export default function ProductManager() {
           </button>
           <button
             onClick={() => setShowAddForm(!showAddForm)}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm text-white bg-[var(--primary)] rounded-xl hover:bg-[var(--primary-dark)] transition-colors whitespace-nowrap"
+            className="flex items-center gap-1.5 px-3 py-2.5 text-sm text-white bg-[var(--primary)] rounded-xl hover:opacity-90 transition-opacity whitespace-nowrap flex-shrink-0"
             style={{ fontFamily: "var(--font-inter), sans-serif" }}
           >
             <Plus className="w-4 h-4" />
-            Agregar
+            <span className="hidden sm:inline">Agregar</span>
           </button>
         </div>
-        <button
-          onClick={resetToDefaults}
-          className="px-4 py-2.5 text-sm text-gray-600 border border-[var(--border)] rounded-xl hover:bg-gray-50 transition-colors whitespace-nowrap"
-          style={{ fontFamily: "var(--font-inter), sans-serif" }}
-        >
-          Restaurar originales
-        </button>
+        {/* Category pills — horizontal scroll on mobile */}
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+          {activeCategories.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setFilterCategory(cat.id)}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${
+                filterCategory === cat.id
+                  ? "bg-[var(--primary)] text-white"
+                  : "bg-white border border-[var(--border)] text-gray-600 hover:border-[var(--primary)] hover:text-[var(--primary)]"
+              }`}
+              style={{ fontFamily: "var(--font-inter), sans-serif" }}
+            >
+              {cat.label}
+              {cat.id !== "all" && (
+                <span className={`ml-1 ${filterCategory === cat.id ? "opacity-80" : "text-gray-400"}`}>
+                  {categoryCounts[cat.id] || 0}
+                </span>
+              )}
+            </button>
+          ))}
+          <button
+            onClick={resetToDefaults}
+            className="flex-shrink-0 ml-auto px-3 py-1.5 text-xs text-gray-400 hover:text-gray-600 whitespace-nowrap"
+            style={{ fontFamily: "var(--font-inter), sans-serif" }}
+          >
+            Restaurar
+          </button>
+        </div>
       </div>
 
       {/* Add Product Form */}
