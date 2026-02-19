@@ -7,6 +7,7 @@ import { CartSidebar } from "@/components/ui/CartSidebar";
 import { ThemeInjector } from "@/components/landing/ThemeInjector";
 import { MetaPixel } from "@/components/tracking/MetaPixel";
 import { GoogleAnalytics } from "@/components/tracking/GoogleAnalytics";
+import { SiteTracker } from "@/components/tracking/SiteTracker";
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
@@ -70,6 +71,7 @@ export default function RootLayout({
             <CartSidebar />
           </CompareProvider>
         </CartProvider>
+        <SiteTracker />
         <MetaPixel />
         <GoogleAnalytics />
       </body>

@@ -1,7 +1,5 @@
 "use client";
 
-"use client";
-
 import { useState, useEffect } from "react";
 import { allProducts, categories } from "@/data/products";
 import {
@@ -15,6 +13,9 @@ import {
   ExternalLink,
   Image as ImageIcon,
   Inbox,
+  BarChart2,
+  Menu,
+  X,
 } from "lucide-react";
 import ProductManager from "./ProductManager";
 import ContentEditor from "./ContentEditor";
@@ -22,8 +23,17 @@ import InfoEditor from "./InfoEditor";
 import LandingEditor from "./LandingEditor";
 import GalleryManager from "./GalleryManager";
 import LeadsViewer from "./LeadsViewer";
+import MetricsDashboard from "./MetricsDashboard";
 
-type AdminSection = "overview" | "products" | "content" | "info" | "landing" | "gallery" | "leads";
+type AdminSection =
+  | "overview"
+  | "metrics"
+  | "leads"
+  | "landing"
+  | "products"
+  | "gallery"
+  | "content"
+  | "info";
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -38,7 +48,9 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
     fetch("/api/leads")
       .then((r) => r.json())
       .then((data) => {
-        const count = (data.leads || []).filter((l: { read: boolean }) => !l.read).length;
+        const count = (data.leads || []).filter(
+          (l: { read: boolean }) => !l.read
+        ).length;
         setUnreadLeads(count);
       })
       .catch(() => {});
@@ -47,7 +59,6 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const productCount = allProducts.length;
   const categoryCount = categories.filter((c) => c.id !== "all").length;
   const featuredCount = allProducts.filter((p) => p.featured).length;
-  const taggedCount = allProducts.filter((p) => p.tag).length;
 
   const handleLogout = () => {
     sessionStorage.removeItem("hs-admin-auth");
@@ -55,76 +66,66 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
   };
 
   const navItems = [
-    { id: "overview" as AdminSection, label: "Resumen", icon: LayoutDashboard, badge: 0 },
+    { id: "overview" as AdminSection, label: "Inicio", icon: LayoutDashboard, badge: 0 },
+    { id: "metrics" as AdminSection, label: "Métricas", icon: BarChart2, badge: 0 },
     { id: "leads" as AdminSection, label: "Consultas", icon: Inbox, badge: unreadLeads },
     { id: "landing" as AdminSection, label: "Landing", icon: Monitor, badge: 0 },
     { id: "products" as AdminSection, label: "Productos", icon: Package, badge: 0 },
     { id: "gallery" as AdminSection, label: "Galería", icon: ImageIcon, badge: 0 },
     { id: "content" as AdminSection, label: "Contenido", icon: FileText, badge: 0 },
-    { id: "info" as AdminSection, label: "Información", icon: Settings, badge: 0 },
+    { id: "info" as AdminSection, label: "Config.", icon: Settings, badge: 0 },
   ];
+
+  const goTo = (section: AdminSection) => {
+    setActiveSection(section);
+    setIsMobileMenuOpen(false);
+  };
 
   return (
     <div className="min-h-screen bg-[var(--muted)]">
-      {/* Top Banner */}
-      <div className="bg-green-50 border-b border-green-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5">
-          <div className="flex items-center gap-2">
-            <Monitor className="w-4 h-4 text-green-600 flex-shrink-0" />
-            <p
-              className="text-xs sm:text-sm text-green-800"
-              style={{ fontFamily: "var(--font-inter), sans-serif" }}
-            >
-              Los cambios se guardan en el servidor y se reflejan en la web para todos los visitantes.
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* Header */}
-      <header className="bg-white border-b border-[var(--border)] sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-16">
+      <header className="bg-white border-b border-[var(--border)] sticky top-0 z-40 shadow-sm">
+        <div className="max-w-screen-xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center h-14 gap-4">
             {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-[var(--primary)] rounded-lg flex items-center justify-center">
-                <Package className="w-4 h-4 text-white" />
+            <button
+              onClick={() => goTo("overview")}
+              className="flex items-center gap-2.5 flex-shrink-0"
+            >
+              <div className="w-7 h-7 bg-[var(--primary)] rounded-lg flex items-center justify-center">
+                <Package className="w-3.5 h-3.5 text-white" />
               </div>
-              <div>
-                <h1
-                  className="text-lg font-semibold text-[var(--foreground)] leading-tight"
-                  style={{ fontFamily: "var(--font-playfair), serif" }}
-                >
-                  Home Stock
-                </h1>
-                <p
-                  className="text-[10px] text-[var(--primary)] uppercase tracking-widest leading-tight"
-                  style={{ fontFamily: "var(--font-inter), sans-serif" }}
-                >
-                  Admin
-                </p>
-              </div>
-            </div>
+              <span
+                className="text-base font-semibold text-[var(--foreground)] hidden sm:block"
+                style={{ fontFamily: "var(--font-playfair), serif" }}
+              >
+                Home Stock
+              </span>
+            </button>
+
+            {/* Divider */}
+            <div className="hidden md:block h-5 w-px bg-[var(--border)]" />
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-1">
+            <nav className="hidden md:flex items-center gap-0.5 flex-1">
               {navItems.map((item) => {
                 const Icon = item.icon;
+                const isActive = activeSection === item.id;
                 return (
                   <button
                     key={item.id}
-                    onClick={() => setActiveSection(item.id)}
-                    className={`relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      activeSection === item.id
-                        ? "bg-[var(--primary)] text-white"
-                        : "text-[var(--foreground)] hover:bg-[var(--muted)]"
+                    onClick={() => goTo(item.id)}
+                    className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                      isActive
+                        ? "bg-[var(--primary)] text-white font-medium"
+                        : "text-gray-500 hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
                     }`}
                     style={{ fontFamily: "var(--font-inter), sans-serif" }}
                   >
-                    <Icon className="w-4 h-4" />
+                    <Icon className="w-3.5 h-3.5 flex-shrink-0" />
                     {item.label}
                     {item.badge > 0 && (
-                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center leading-none">
                         {item.badge > 9 ? "9+" : item.badge}
                       </span>
                     )}
@@ -133,54 +134,35 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
               })}
             </nav>
 
-            {/* Actions */}
-            <div className="flex items-center gap-3">
+            {/* Right Actions */}
+            <div className="flex items-center gap-1 ml-auto">
               <a
                 href="/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hidden sm:flex items-center gap-2 px-3 py-2 text-sm text-[var(--primary)] hover:bg-[var(--muted)] rounded-lg transition-colors"
+                title="Ver sitio"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-[var(--primary)] hover:bg-[var(--primary)]/10 rounded-lg transition-colors"
                 style={{ fontFamily: "var(--font-inter), sans-serif" }}
               >
-                <ExternalLink className="w-4 h-4" />
-                Ver sitio
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Ver sitio</span>
               </a>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                title="Cerrar sesión"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                 style={{ fontFamily: "var(--font-inter), sans-serif" }}
               >
-                <LogOut className="w-4 h-4" />
-                <span className="hidden sm:inline">Cerrar Sesión</span>
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Salir</span>
               </button>
 
-              {/* Mobile menu toggle */}
+              {/* Mobile Hamburger */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="md:hidden p-2 text-[var(--foreground)] hover:bg-[var(--muted)] rounded-lg"
+                className="md:hidden p-1.5 text-gray-500 hover:bg-[var(--muted)] rounded-lg"
               >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  {isMobileMenuOpen ? (
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  ) : (
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 6h16M4 12h16M4 18h16"
-                    />
-                  )}
-                </svg>
+                {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
             </div>
           </div>
@@ -189,24 +171,22 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
         {/* Mobile Navigation */}
         {isMobileMenuOpen && (
           <div className="md:hidden border-t border-[var(--border)] bg-white px-4 py-3">
-            <nav className="space-y-1">
+            <nav className="grid grid-cols-2 gap-1">
               {navItems.map((item) => {
                 const Icon = item.icon;
+                const isActive = activeSection === item.id;
                 return (
                   <button
                     key={item.id}
-                    onClick={() => {
-                      setActiveSection(item.id);
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={`relative flex items-center gap-3 w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                      activeSection === item.id
+                    onClick={() => goTo(item.id)}
+                    className={`relative flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                      isActive
                         ? "bg-[var(--primary)] text-white"
                         : "text-[var(--foreground)] hover:bg-[var(--muted)]"
                     }`}
                     style={{ fontFamily: "var(--font-inter), sans-serif" }}
                   >
-                    <Icon className="w-4 h-4" />
+                    <Icon className="w-4 h-4 flex-shrink-0" />
                     {item.label}
                     {item.badge > 0 && (
                       <span className="ml-auto w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
@@ -222,284 +202,193 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        {/* Overview */}
+      <main className="max-w-screen-xl mx-auto px-4 sm:px-6 py-6">
+        {/* ── OVERVIEW ── */}
         {activeSection === "overview" && (
-          <div className="space-y-8">
+          <div className="space-y-6">
+            {/* Page title */}
             <div>
               <h2
-                className="text-2xl font-semibold text-[var(--foreground)] mb-1"
+                className="text-xl font-semibold text-[var(--foreground)]"
                 style={{ fontFamily: "var(--font-playfair), serif" }}
               >
-                Panel de Administración
+                Panel de administración
               </h2>
               <p
-                className="text-sm text-gray-500"
+                className="text-sm text-gray-500 mt-0.5"
                 style={{ fontFamily: "var(--font-inter), sans-serif" }}
               >
-                Gestioná productos, contenido e información del negocio.
+                Home Stock · {new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
               </p>
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-white border border-[var(--border)] rounded-xl p-5">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 bg-[#8B7355]/10 rounded-xl flex items-center justify-center">
-                    <Package className="w-5 h-5 text-[var(--primary)]" />
-                  </div>
+            {/* Quick Stats */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: "Productos", value: productCount, color: "text-[var(--primary)]", bg: "bg-[var(--primary)]/10" },
+                { label: "Categorías", value: categoryCount, color: "text-violet-600", bg: "bg-violet-50" },
+                { label: "Destacados", value: featuredCount, color: "text-amber-600", bg: "bg-amber-50" },
+                { label: "Sin leer", value: unreadLeads, color: unreadLeads > 0 ? "text-red-600" : "text-gray-400", bg: unreadLeads > 0 ? "bg-red-50" : "bg-gray-50" },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  className="bg-white border border-[var(--border)] rounded-xl px-4 py-3"
+                >
+                  <p
+                    className={`text-2xl font-semibold ${stat.color}`}
+                    style={{ fontFamily: "var(--font-inter), sans-serif" }}
+                  >
+                    {stat.value}
+                  </p>
+                  <p
+                    className="text-xs text-gray-500 mt-0.5"
+                    style={{ fontFamily: "var(--font-inter), sans-serif" }}
+                  >
+                    {stat.label}
+                  </p>
                 </div>
-                <p
-                  className="text-3xl font-semibold text-[var(--foreground)]"
-                  style={{ fontFamily: "var(--font-inter), sans-serif" }}
-                >
-                  {productCount}
-                </p>
-                <p
-                  className="text-sm text-gray-500 mt-1"
-                  style={{ fontFamily: "var(--font-inter), sans-serif" }}
-                >
-                  Productos totales
-                </p>
-              </div>
-              <div className="bg-white border border-[var(--border)] rounded-xl p-5">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 bg-[#C9A962]/10 rounded-xl flex items-center justify-center">
-                    <LayoutDashboard className="w-5 h-5 text-[var(--accent)]" />
-                  </div>
-                </div>
-                <p
-                  className="text-3xl font-semibold text-[var(--foreground)]"
-                  style={{ fontFamily: "var(--font-inter), sans-serif" }}
-                >
-                  {categoryCount}
-                </p>
-                <p
-                  className="text-sm text-gray-500 mt-1"
-                  style={{ fontFamily: "var(--font-inter), sans-serif" }}
-                >
-                  Categorías
-                </p>
-              </div>
-              <div className="bg-white border border-[var(--border)] rounded-xl p-5">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
-                    <Package className="w-5 h-5 text-green-600" />
-                  </div>
-                </div>
-                <p
-                  className="text-3xl font-semibold text-[var(--foreground)]"
-                  style={{ fontFamily: "var(--font-inter), sans-serif" }}
-                >
-                  {featuredCount}
-                </p>
-                <p
-                  className="text-sm text-gray-500 mt-1"
-                  style={{ fontFamily: "var(--font-inter), sans-serif" }}
-                >
-                  Destacados
-                </p>
-              </div>
-              <div className="bg-white border border-[var(--border)] rounded-xl p-5">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-                    <FileText className="w-5 h-5 text-blue-600" />
-                  </div>
-                </div>
-                <p
-                  className="text-3xl font-semibold text-[var(--foreground)]"
-                  style={{ fontFamily: "var(--font-inter), sans-serif" }}
-                >
-                  {taggedCount}
-                </p>
-                <p
-                  className="text-sm text-gray-500 mt-1"
-                  style={{ fontFamily: "var(--font-inter), sans-serif" }}
-                >
-                  Con etiqueta
-                </p>
-              </div>
+              ))}
             </div>
 
-            {/* Quick Access Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <button
-                onClick={() => setActiveSection("landing")}
-                className="bg-white border border-[var(--border)] rounded-xl p-6 text-left hover:border-[var(--primary)] hover:shadow-sm transition-all group"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-4">
-                      <Monitor className="w-6 h-6 text-purple-600" />
-                    </div>
-                    <h3
-                      className="text-lg font-semibold text-[var(--foreground)] mb-1"
-                      style={{ fontFamily: "var(--font-playfair), serif" }}
-                    >
-                      Landing
-                    </h3>
-                    <p
-                      className="text-sm text-gray-500"
-                      style={{ fontFamily: "var(--font-inter), sans-serif" }}
-                    >
-                      Editá hero, textos y productos destacados de la home.
-                    </p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-[var(--primary)] transition-colors" />
-                </div>
-              </button>
-
-              <button
-                onClick={() => setActiveSection("products")}
-                className="bg-white border border-[var(--border)] rounded-xl p-6 text-left hover:border-[var(--primary)] hover:shadow-sm transition-all group"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="w-12 h-12 bg-[#8B7355]/10 rounded-xl flex items-center justify-center mb-4">
-                      <Package className="w-6 h-6 text-[var(--primary)]" />
-                    </div>
-                    <h3
-                      className="text-lg font-semibold text-[var(--foreground)] mb-1"
-                      style={{ fontFamily: "var(--font-playfair), serif" }}
-                    >
-                      Productos
-                    </h3>
-                    <p
-                      className="text-sm text-gray-500"
-                      style={{ fontFamily: "var(--font-inter), sans-serif" }}
-                    >
-                      Gestioná precios, categorías, etiquetas y productos
-                      destacados.
-                    </p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-[var(--primary)] transition-colors" />
-                </div>
-              </button>
-
-              <button
-                onClick={() => setActiveSection("content")}
-                className="bg-white border border-[var(--border)] rounded-xl p-6 text-left hover:border-[var(--primary)] hover:shadow-sm transition-all group"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
-                      <FileText className="w-6 h-6 text-blue-600" />
-                    </div>
-                    <h3
-                      className="text-lg font-semibold text-[var(--foreground)] mb-1"
-                      style={{ fontFamily: "var(--font-playfair), serif" }}
-                    >
-                      Contenido
-                    </h3>
-                    <p
-                      className="text-sm text-gray-500"
-                      style={{ fontFamily: "var(--font-inter), sans-serif" }}
-                    >
-                      Editá términos, preguntas frecuentes e información de
-                      envíos.
-                    </p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-[var(--primary)] transition-colors" />
-                </div>
-              </button>
-
-              <button
-                onClick={() => setActiveSection("info")}
-                className="bg-white border border-[var(--border)] rounded-xl p-6 text-left hover:border-[var(--primary)] hover:shadow-sm transition-all group"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center mb-4">
-                      <Settings className="w-6 h-6 text-amber-600" />
-                    </div>
-                    <h3
-                      className="text-lg font-semibold text-[var(--foreground)] mb-1"
-                      style={{ fontFamily: "var(--font-playfair), serif" }}
-                    >
-                      Información
-                    </h3>
-                    <p
-                      className="text-sm text-gray-500"
-                      style={{ fontFamily: "var(--font-inter), sans-serif" }}
-                    >
-                      Actualizá datos de contacto, horarios y redes sociales.
-                    </p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-[var(--primary)] transition-colors" />
-                </div>
-              </button>
-
-              <button
-                onClick={() => setActiveSection("leads")}
-                className="bg-white border border-[var(--border)] rounded-xl p-6 text-left hover:border-[var(--primary)] hover:shadow-sm transition-all group relative"
-              >
-                {unreadLeads > 0 && (
-                  <span className="absolute top-4 right-4 w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                    {unreadLeads > 9 ? "9+" : unreadLeads}
-                  </span>
-                )}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4">
-                      <Inbox className="w-6 h-6 text-green-600" />
-                    </div>
-                    <h3
-                      className="text-lg font-semibold text-[var(--foreground)] mb-1"
-                      style={{ fontFamily: "var(--font-playfair), serif" }}
-                    >
-                      Consultas
-                    </h3>
-                    <p
-                      className="text-sm text-gray-500"
-                      style={{ fontFamily: "var(--font-inter), sans-serif" }}
-                    >
-                      Revisá los mensajes, turnos y consultas recibidas.
-                    </p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-[var(--primary)] transition-colors" />
-                </div>
-              </button>
-            </div>
-
-            {/* Category Breakdown */}
-            <div className="bg-white border border-[var(--border)] rounded-xl p-6">
+            {/* Quick Access Grid */}
+            <div>
               <h3
-                className="text-lg font-semibold text-[var(--foreground)] mb-4"
-                style={{ fontFamily: "var(--font-playfair), serif" }}
+                className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3"
+                style={{ fontFamily: "var(--font-inter), sans-serif" }}
               >
-                Productos por Categoría
+                Acceso rápido
               </h3>
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {[
+                  {
+                    section: "landing" as AdminSection,
+                    label: "Landing",
+                    desc: "Hero, textos y productos destacados",
+                    icon: Monitor,
+                    bg: "bg-purple-50",
+                    color: "text-purple-600",
+                  },
+                  {
+                    section: "products" as AdminSection,
+                    label: "Productos",
+                    desc: "Precios, categorías y etiquetas",
+                    icon: Package,
+                    bg: "bg-[var(--primary)]/10",
+                    color: "text-[var(--primary)]",
+                  },
+                  {
+                    section: "leads" as AdminSection,
+                    label: "Consultas",
+                    desc: "Mensajes, turnos y formularios",
+                    icon: Inbox,
+                    bg: unreadLeads > 0 ? "bg-red-50" : "bg-emerald-50",
+                    color: unreadLeads > 0 ? "text-red-600" : "text-emerald-600",
+                    badge: unreadLeads,
+                  },
+                  {
+                    section: "metrics" as AdminSection,
+                    label: "Métricas",
+                    desc: "Visitas, carrito y conversión",
+                    icon: BarChart2,
+                    bg: "bg-blue-50",
+                    color: "text-blue-600",
+                  },
+                  {
+                    section: "gallery" as AdminSection,
+                    label: "Galería",
+                    desc: "Fotos del showroom y productos",
+                    icon: ImageIcon,
+                    bg: "bg-amber-50",
+                    color: "text-amber-600",
+                  },
+                  {
+                    section: "content" as AdminSection,
+                    label: "Contenido",
+                    desc: "FAQ, términos y envíos",
+                    icon: FileText,
+                    bg: "bg-sky-50",
+                    color: "text-sky-600",
+                  },
+                  {
+                    section: "info" as AdminSection,
+                    label: "Configuración",
+                    desc: "Contacto, horarios y redes sociales",
+                    icon: Settings,
+                    bg: "bg-gray-50",
+                    color: "text-gray-600",
+                  },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.section}
+                      onClick={() => goTo(item.section)}
+                      className="relative bg-white border border-[var(--border)] rounded-xl p-4 text-left hover:border-[var(--primary)]/50 hover:shadow-sm transition-all group"
+                    >
+                      {item.badge && item.badge > 0 ? (
+                        <span className="absolute top-3 right-3 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                          {item.badge > 9 ? "9+" : item.badge}
+                        </span>
+                      ) : null}
+                      <div
+                        className={`w-9 h-9 ${item.bg} rounded-lg flex items-center justify-center mb-3`}
+                      >
+                        <Icon className={`w-4 h-4 ${item.color}`} />
+                      </div>
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p
+                            className="text-sm font-semibold text-[var(--foreground)]"
+                            style={{ fontFamily: "var(--font-inter), sans-serif" }}
+                          >
+                            {item.label}
+                          </p>
+                          <p
+                            className="text-xs text-gray-400 mt-0.5"
+                            style={{ fontFamily: "var(--font-inter), sans-serif" }}
+                          >
+                            {item.desc}
+                          </p>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-[var(--primary)] transition-colors flex-shrink-0 mt-0.5" />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Category breakdown */}
+            <div className="bg-white border border-[var(--border)] rounded-xl p-5">
+              <h3
+                className="text-sm font-semibold text-[var(--foreground)] mb-4"
+                style={{ fontFamily: "var(--font-inter), sans-serif" }}
+              >
+                Distribución por categoría
+              </h3>
+              <div className="space-y-2.5">
                 {categories
                   .filter((c) => c.id !== "all")
                   .map((cat) => {
-                    const count = allProducts.filter(
-                      (p) => p.category === cat.id
-                    ).length;
-                    const percentage = Math.round(
-                      (count / productCount) * 100
-                    );
+                    const count = allProducts.filter((p) => p.category === cat.id).length;
+                    const percentage = Math.round((count / productCount) * 100);
                     return (
-                      <div key={cat.id} className="flex items-center gap-4">
+                      <div key={cat.id} className="flex items-center gap-3">
                         <span
-                          className="text-sm text-[var(--foreground)] w-24 flex-shrink-0"
-                          style={{
-                            fontFamily: "var(--font-inter), sans-serif",
-                          }}
+                          className="text-sm text-gray-600 w-28 flex-shrink-0"
+                          style={{ fontFamily: "var(--font-inter), sans-serif" }}
                         >
                           {cat.label}
                         </span>
-                        <div className="flex-1 h-2.5 bg-[var(--muted)] rounded-full overflow-hidden">
+                        <div className="flex-1 h-1.5 bg-[var(--muted)] rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-[var(--primary)] rounded-full transition-all"
+                            className="h-full bg-[var(--primary)] rounded-full"
                             style={{ width: `${percentage}%` }}
                           />
                         </div>
                         <span
-                          className="text-sm text-gray-500 w-16 text-right flex-shrink-0"
-                          style={{
-                            fontFamily: "var(--font-inter), sans-serif",
-                          }}
+                          className="text-xs text-gray-400 w-14 text-right flex-shrink-0"
+                          style={{ fontFamily: "var(--font-inter), sans-serif" }}
                         >
                           {count} ({percentage}%)
                         </span>
@@ -511,23 +400,14 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
           </div>
         )}
 
-        {/* Leads / Consultas */}
-        {activeSection === "leads" && <LeadsViewer />}
-
-        {/* Landing */}
-        {activeSection === "landing" && <LandingEditor />}
-
-        {/* Products */}
+        {/* ── SECTIONS ── */}
+        {activeSection === "metrics"  && <MetricsDashboard />}
+        {activeSection === "leads"    && <LeadsViewer />}
+        {activeSection === "landing"  && <LandingEditor />}
         {activeSection === "products" && <ProductManager />}
-
-        {/* Gallery */}
-        {activeSection === "gallery" && <GalleryManager />}
-
-        {/* Content */}
-        {activeSection === "content" && <ContentEditor />}
-
-        {/* Info */}
-        {activeSection === "info" && <InfoEditor />}
+        {activeSection === "gallery"  && <GalleryManager />}
+        {activeSection === "content"  && <ContentEditor />}
+        {activeSection === "info"     && <InfoEditor />}
       </main>
     </div>
   );

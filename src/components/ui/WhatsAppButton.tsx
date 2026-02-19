@@ -5,6 +5,7 @@ import { X, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WHATSAPP_NUMBER } from "@/lib/constants";
 import { fetchFromServer, STORAGE_KEYS } from "@/lib/storage";
+import { trackEvent } from "@/components/tracking/SiteTracker";
 
 const DEFAULT_MESSAGE = "Hola! Me interesa conocer más sobre sus muebles de diseño.";
 
@@ -54,6 +55,7 @@ export function WhatsAppButton() {
             href={whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => trackEvent("whatsapp_click")}
             className="flex items-center justify-center gap-2 w-full bg-[#25D366] text-white py-3 rounded-lg font-medium hover:bg-[#20BD5A] transition-colors"
           >
             <MessageCircle size={20} />
