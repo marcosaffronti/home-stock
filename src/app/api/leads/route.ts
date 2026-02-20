@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
+import { requireAdminCookie } from "@/lib/admin-auth";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const LEADS_FILE = path.join(DATA_DIR, "leads.json");
@@ -35,21 +36,26 @@ function writeLeads(leads: Lead[]) {
   if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
   }
-  fs.writeFileSync(LEADS_FILE, JSON.stringify(leads, null, 2), "utf-8");
+  const tmp = LEADS_FILE + ".tmp";
+  fs.writeFileSync(tmp, JSON.stringify(leads, null, 2), "utf-8");
+  fs.renameSync(tmp, LEADS_FILE); // atomic on same filesystem
 }
 
 const NO_CACHE = {
   "Cache-Control": "no-cache, no-store, must-revalidate",
 };
 
-// GET /api/leads — list all leads, newest first
-export async function GET() {
+// GET /api/leads — list all leads, newest first (admin only)
+export async function GET(req: NextRequest) {
+  if (!requireAdminCookie(req)) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
   const leads = readLeads();
   leads.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   return NextResponse.json({ leads }, { headers: NO_CACHE });
 }
 
-// POST /api/leads — add a new lead
+// POST /api/leads — add a new lead (public)
 export async function POST(req: NextRequest) {
   const body = await req.json();
 
@@ -83,8 +89,11 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true, id: lead.id });
 }
 
-// PATCH /api/leads — mark as read, update notes, mark replied
+// PATCH /api/leads — mark as read, update notes, mark replied (admin only)
 export async function PATCH(req: NextRequest) {
+  if (!requireAdminCookie(req)) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
   const body = await req.json();
   const { id, read, notes, repliedAt } = body as {
     id: string;
@@ -105,8 +114,11 @@ export async function PATCH(req: NextRequest) {
   return NextResponse.json({ ok: true });
 }
 
-// DELETE /api/leads?id=xxx
+// DELETE /api/leads?id=xxx (admin only)
 export async function DELETE(req: NextRequest) {
+  if (!requireAdminCookie(req)) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
   const id = req.nextUrl.searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 

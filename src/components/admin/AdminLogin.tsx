@@ -3,30 +3,36 @@
 import { useState } from "react";
 import { Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
 
-interface AdminLoginProps {
-  onLogin: () => void;
-}
-
-export default function AdminLogin({ onLogin }: AdminLoginProps) {
+export default function AdminLogin() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    setTimeout(() => {
-      if (password === "homestock2024") {
-        sessionStorage.setItem("hs-admin-auth", "true");
-        onLogin();
+    try {
+      const res = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+
+      if (res.ok) {
+        // Cookie is now set server-side; redirect to admin dashboard
+        window.location.href = "/admin";
       } else {
-        setError("Contraseña incorrecta. Intentá nuevamente.");
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Contraseña incorrecta. Intentá nuevamente.");
         setLoading(false);
       }
-    }, 500);
+    } catch {
+      setError("Error de conexión. Intentá nuevamente.");
+      setLoading(false);
+    }
   };
 
   return (

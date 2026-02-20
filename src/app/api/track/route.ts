@@ -33,7 +33,9 @@ function readJson<T>(filePath: string, fallback: T): T {
 
 function writeJson(filePath: string, data: unknown) {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
+  const tmp = filePath + ".tmp";
+  fs.writeFileSync(tmp, JSON.stringify(data, null, 2), "utf-8");
+  fs.renameSync(tmp, filePath); // atomic on same filesystem
 }
 
 function pruneOldDays(data: Record<string, unknown>, days = 90) {

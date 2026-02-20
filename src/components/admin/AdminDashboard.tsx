@@ -61,7 +61,6 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const featuredCount = allProducts.filter((p) => p.featured).length;
 
   const handleLogout = () => {
-    sessionStorage.removeItem("hs-admin-auth");
     onLogout();
   };
 

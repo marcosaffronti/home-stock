@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { requireAdminCookie } from "@/lib/admin-auth";
 
 const CONFIG_DIR = path.join(process.cwd(), "data");
 const CONFIG_FILE = path.join(CONFIG_DIR, "site-config.json");
@@ -19,7 +20,9 @@ function writeConfig(config: Record<string, unknown>) {
   if (!fs.existsSync(CONFIG_DIR)) {
     fs.mkdirSync(CONFIG_DIR, { recursive: true });
   }
-  fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), "utf-8");
+  const tmp = CONFIG_FILE + ".tmp";
+  fs.writeFileSync(tmp, JSON.stringify(config, null, 2), "utf-8");
+  fs.renameSync(tmp, CONFIG_FILE); // atomic on same filesystem
 }
 
 const NO_CACHE_HEADERS = {
@@ -27,6 +30,7 @@ const NO_CACHE_HEADERS = {
   "Pragma": "no-cache",
 };
 
+// GET /api/config — read config (public, site needs this to render)
 export async function GET(req: NextRequest) {
   const key = req.nextUrl.searchParams.get("key");
   const config = readConfig();
@@ -37,7 +41,12 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(config, { headers: NO_CACHE_HEADERS });
 }
 
+// POST /api/config — write config (admin only)
 export async function POST(req: NextRequest) {
+  if (!requireAdminCookie(req)) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+
   const body = await req.json();
   const { key, value } = body;
 
