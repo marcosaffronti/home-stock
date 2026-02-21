@@ -11,6 +11,7 @@ export const STORAGE_KEYS = {
   GA4_MEASUREMENT_ID: "hs-ga4-measurement-id",
   CRM_WEBHOOK_URL: "hs-crm-webhook-url",
   WHATSAPP_NUMBER: "hs-whatsapp-number",
+  MP_CHECKOUT: "hs-checkout",
 } as const;
 
 export function getStoredValue<T>(key: string, fallback: T): T {

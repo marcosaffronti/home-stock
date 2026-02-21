@@ -30,15 +30,26 @@ const NO_CACHE_HEADERS = {
   "Pragma": "no-cache",
 };
 
+// Keys that must NEVER be sent to the browser
+const SECRET_KEYS = ["hs-mp-access-token"];
+
 // GET /api/config — read config (public, site needs this to render)
 export async function GET(req: NextRequest) {
   const key = req.nextUrl.searchParams.get("key");
   const config = readConfig();
 
   if (key) {
+    // Never expose secret keys even via ?key= param
+    if (SECRET_KEYS.includes(key)) {
+      return NextResponse.json({ value: null }, { headers: NO_CACHE_HEADERS });
+    }
     return NextResponse.json({ value: config[key] ?? null }, { headers: NO_CACHE_HEADERS });
   }
-  return NextResponse.json(config, { headers: NO_CACHE_HEADERS });
+
+  // Filter secrets from full config response
+  const public_config = { ...config };
+  for (const k of SECRET_KEYS) delete public_config[k];
+  return NextResponse.json(public_config, { headers: NO_CACHE_HEADERS });
 }
 
 // POST /api/config — write config (admin only)

@@ -1,16 +1,27 @@
 "use client";
 
 import { useCart } from "@/context/CartContext";
-import { X, Plus, Minus, ShoppingBag, Trash2, MessageCircle } from "lucide-react";
+import { X, Plus, Minus, ShoppingBag, Trash2, MessageCircle, CreditCard } from "lucide-react";
 import { Button } from "./Button";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { WHATSAPP_NUMBER } from "@/lib/constants";
 import { formatPrice } from "@/lib/formatters";
 import { trackInitiateCheckout } from "@/lib/tracking";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { fetchFromServer, STORAGE_KEYS } from "@/lib/storage";
 
 export function CartSidebar() {
   const { items, isOpen, closeCart, total, itemCount, updateQuantity, removeItem, getItemKey } = useCart();
+  const router = useRouter();
+  const [mpEnabled, setMpEnabled] = useState(false);
+
+  useEffect(() => {
+    fetchFromServer<{ enabled?: boolean } | null>(STORAGE_KEYS.MP_CHECKOUT, null).then((cfg) => {
+      setMpEnabled(cfg?.enabled === true);
+    });
+  }, []);
 
   const handleCheckout = () => {
     trackInitiateCheckout(
@@ -172,7 +183,22 @@ export function CartSidebar() {
             <p className="text-xs text-gray-500 mb-4">
               Envío calculado en el checkout
             </p>
-            <Button size="lg" className="w-full mb-2" onClick={handleCheckout}>
+            {mpEnabled && (
+              <Button
+                size="lg"
+                className="w-full mb-2"
+                onClick={() => { closeCart(); router.push("/checkout"); }}
+              >
+                <CreditCard size={20} className="mr-2" />
+                Pagar online
+              </Button>
+            )}
+            <Button
+              size="lg"
+              variant={mpEnabled ? "outline" : "primary"}
+              className="w-full mb-2"
+              onClick={handleCheckout}
+            >
               <MessageCircle size={20} className="mr-2" />
               Finalizar por WhatsApp
             </Button>
