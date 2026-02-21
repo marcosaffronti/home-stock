@@ -43,28 +43,37 @@ export async function POST(req: NextRequest) {
   const mp = new MercadoPagoConfig({ accessToken: token });
   const preference = new Preference(mp);
 
-  const result = await preference.create({
-    body: {
-      items: items.map((item: { name: string; price: number; quantity: number }) => ({
-        id: item.name,
-        title: item.name,
-        quantity: item.quantity,
-        unit_price: item.price,
-        currency_id: "ARS",
-      })),
-      payer: customerEmail ? { email: customerEmail } : undefined,
-      back_urls: {
-        success: `${baseUrl}/checkout/success`,
-        failure: `${baseUrl}/checkout/failure`,
-        pending: `${baseUrl}/checkout/pending`,
+  try {
+    const result = await preference.create({
+      body: {
+        items: items.map((item: { name: string; price: number; quantity: number }) => ({
+          id: item.name,
+          title: item.name,
+          quantity: item.quantity,
+          unit_price: item.price,
+          currency_id: "ARS",
+        })),
+        payer: customerEmail ? { email: customerEmail } : undefined,
+        back_urls: {
+          success: `${baseUrl}/checkout/success`,
+          failure: `${baseUrl}/checkout/failure`,
+          pending: `${baseUrl}/checkout/pending`,
+        },
+        auto_return: "approved",
+        notification_url: `${baseUrl}/api/webhook/mp`,
       },
-      auto_return: "approved",
-      notification_url: `${baseUrl}/api/webhook/mp`,
-    },
-  });
+    });
 
-  return NextResponse.json({
-    init_point: result.init_point,
-    preference_id: result.id,
-  });
+    return NextResponse.json({
+      init_point: result.init_point,
+      preference_id: result.id,
+    });
+  } catch (err: unknown) {
+    const mpErr = err as { status?: number; message?: string; code?: string };
+    console.error("[Checkout] MP error:", mpErr);
+    return NextResponse.json(
+      { error: "mp_error", message: mpErr?.message || "Error al crear preferencia de pago" },
+      { status: 502 }
+    );
+  }
 }

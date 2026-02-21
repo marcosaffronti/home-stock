@@ -35,7 +35,7 @@ export default function CheckoutPage() {
       });
       const data = await res.json();
       if (!res.ok || !data.init_point) {
-        setError("No se pudo iniciar el pago. Intentá de nuevo.");
+        setError(data.message || "No se pudo iniciar el pago. Verificá la configuración de MercadoPago.");
         return;
       }
       window.location.href = data.init_point;
